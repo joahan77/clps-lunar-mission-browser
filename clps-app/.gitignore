@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Node portable binaries in workspace
+node.exe
+npm
+npm.cmd
+npm.ps1
+npx
+npx.cmd
+npx.ps1
+corepack
+corepack.cmd
+nodevars.bat
+install_tools.bat
+
+# Large binary GeoTIFF files (>40MB each; heightmaps are in public/heightmaps/)
+*.tif
+*.tiff
+
+# NASA SPICE binary & text kernels (auto-downloaded on first run by scripts)
+*.bsp
+*.bpc
+*.tpc
+*.tf
+
+# Logs & temp
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Editor directories
+.vscode/
+.idea/
+.DS_Store
