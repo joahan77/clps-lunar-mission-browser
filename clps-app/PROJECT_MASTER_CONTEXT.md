@@ -51,13 +51,23 @@ CLPS lunar/
 │
 ├── public/                              # Static public assets served by Vite
 │   ├── shackleton_data.json             # Real 30-day (720 hours) NASA JPL ephemeris dataset
+│   ├── mons_mouton_data.json            # 30-day ephemeris for Mons Mouton
+│   ├── nobile_rim_data.json             # 30-day ephemeris for Nobile Rim
+│   ├── haworth_data.json                # 30-day ephemeris for Haworth Crater
+│   ├── cabeus_b_data.json               # 30-day ephemeris for Cabeus B
+│   ├── slater_plain_data.json           # 30-day ephemeris for Slater Plain
 │   └── heightmaps/
 │       ├── shackleton_heightmap.png     # 1024x1024 normalized DEM heightmap (Site 04)
 │       ├── site04_heightmap.png         # Site 04 alias
 │       ├── malapert_heightmap.png       # 1024x1024 DEM heightmap (Site 07)
 │       ├── site07_heightmap.png         # Site 07 alias
 │       ├── de_gerlache_heightmap.png    # 1024x1024 DEM heightmap (Site 23)
-│       └── site23_heightmap.png         # Site 23 alias
+│       ├── site23_heightmap.png         # Site 23 alias
+│       ├── mons_mouton_heightmap.png    # 1024x1024 DEM heightmap from ldem_87s_5mpp.tif
+│       ├── nobile_rim_heightmap.png     # 1024x1024 DEM heightmap from ldem_87s_5mpp.tif
+│       ├── haworth_heightmap.png        # 1024x1024 DEM heightmap from ldem_87s_5mpp.tif
+│       ├── cabeus_b_heightmap.png       # 1024x1024 DEM heightmap from ldem_87s_5mpp.tif
+│       └── slater_plain_heightmap.png   # 1024x1024 DEM heightmap from ldem_87s_5mpp.tif
 │
 ├── src/
 │   ├── main.tsx                         # React root mount point (creates root on #root)
@@ -69,6 +79,11 @@ CLPS lunar/
 │
 ├── process_lunar_heightmaps.py          # Python pipeline: GeoTIFF -> normalized 1024x1024 grayscale PNG
 ├── generate_shackleton_ephemeris.py     # Python pipeline: Skyfield + JPL DE421 -> shackleton_data.json
+├── generate_multi_site_telemetry.py     # Task 2 pipeline: 720hr solar/power/comms telemetry for 5 sites
+├── process_new_lunar_sites.py           # Multi-site pipeline: ldem_87s_5mpp.tif + Skyfield -> 5 heightmaps & JSONs
+│
+├── raw_data/
+│   └── ldem_87s_5mpp.tif                # Massive 3.4GB LOLA South Pole DEM (40000x40000 px, 5m/px)
 ├── PROJECT_MASTER_CONTEXT.md            # [This Master Document] Complete project context & handover
 │
 ├── Site04_final_adj_5mpp_surf.tif       # Raw NASA DEM GeoTIFF (3200x3200, 5m/px) - Shackleton
