@@ -1,6 +1,8 @@
 import { useRef, useMemo, Suspense } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Stars, Grid, useTexture } from '@react-three/drei';
+import { OrbitControls, Stars, useTexture } from '@react-three/drei';
+import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
+import { BlendFunction } from 'postprocessing';
 import * as THREE from 'three';
 
 interface SceneProps {
@@ -78,7 +80,7 @@ function SunDirectionalLight({ sunElevation }: { sunElevation: number }) {
     <directionalLight
       ref={lightRef}
       position={targetPos}
-      intensity={3.2}
+      intensity={4.0}
       color="#fffbeb"
       castShadow
       shadow-mapSize-width={2048}
@@ -107,17 +109,21 @@ function SunOrb({ sunElevation }: { sunElevation: number }) {
 
   return (
     <group ref={groupRef} position={targetPos}>
-      {/* Core Glowing Sun Sphere */}
+      {/* Core Glowing Sun Sphere — unlit white, fog-exempt so Bloom can pick it up */}
       <mesh>
         <sphereGeometry args={[2.5, 32, 32]} />
-        <meshBasicMaterial color="#ffdd55" />
+        <meshBasicMaterial color="#ffffff" fog={false} toneMapped={false} />
       </mesh>
+      {/* Local emissive fill so the disc stays hot even when the terrain is in shadow */}
+      <pointLight color="#ffffff" intensity={4} distance={40} decay={2} />
 
       {/* Primary Solar Corona Bloom Ring */}
       <mesh scale={1.25}>
         <sphereGeometry args={[2.5, 32, 32]} />
         <meshBasicMaterial
           color="#ffe066"
+          fog={false}
+          toneMapped={false}
           transparent
           opacity={0.35}
           blending={THREE.AdditiveBlending}
@@ -131,6 +137,8 @@ function SunOrb({ sunElevation }: { sunElevation: number }) {
         <sphereGeometry args={[2.5, 32, 32]} />
         <meshBasicMaterial
           color="#ffaa00"
+          fog={false}
+          toneMapped={false}
           transparent
           opacity={0.15}
           blending={THREE.AdditiveBlending}
@@ -142,10 +150,12 @@ function SunOrb({ sunElevation }: { sunElevation: number }) {
   );
 }
 
-/** Visual representation of Earth (blue sphere, radius 1.5, position driven by earthElevation) */
+/** Visual representation of Earth (textured sphere, radius 1.5, position driven by earthElevation) */
 function EarthOrb({ earthElevation }: { earthElevation: number }) {
   const groupRef = useRef<THREE.Group>(null);
   const targetPos = useMemo(() => calculateEarthPosition(earthElevation), [earthElevation]);
+  const earthMap = useTexture('https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg');
+  earthMap.colorSpace = THREE.SRGBColorSpace;
 
   useFrame(() => {
     if (groupRef.current) {
@@ -155,17 +165,19 @@ function EarthOrb({ earthElevation }: { earthElevation: number }) {
 
   return (
     <group ref={groupRef} position={targetPos}>
-      {/* Core Earth Blue Sphere */}
+      {/* Unlit textured Earth so it stays visible (not shadowed) and is fog-exempt */}
       <mesh>
         <sphereGeometry args={[1.5, 32, 32]} />
-        <meshBasicMaterial color="#4488ff" />
+        <meshBasicMaterial map={earthMap} fog={false} />
       </mesh>
+      <pointLight color="#9ec5ff" intensity={1.8} distance={12} decay={2} />
 
       {/* Atmospheric Rayleigh Scattering Glow Halo */}
       <mesh scale={1.25}>
         <sphereGeometry args={[1.5, 32, 32]} />
         <meshBasicMaterial
           color="#60a5fa"
+          fog={false}
           transparent
           opacity={0.32}
           blending={THREE.AdditiveBlending}
@@ -179,6 +191,7 @@ function EarthOrb({ earthElevation }: { earthElevation: number }) {
         <sphereGeometry args={[1.5, 32, 32]} />
         <meshBasicMaterial
           color="#3b82f6"
+          fog={false}
           transparent
           opacity={0.12}
           blending={THREE.AdditiveBlending}
@@ -230,22 +243,29 @@ export default function Scene({ sunElevation, earthElevation, heightmapUrl }: Sc
     <Canvas
       shadows
       camera={{ position: [0, 30, 50], fov: 45 }}
-      gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}
+      gl={{
+        antialias: true,
+        toneMapping: THREE.ACESFilmicToneMapping,
+        toneMappingExposure: 1.0,
+        powerPreference: 'high-performance',
+      }}
       className="w-full h-full"
     >
-      {/* Space background & subtle distant fog */}
-      <color attach="background" args={['#030712']} />
-      <fog attach="fog" args={['#030712', 120, 320]} />
+      {/* Space background & exponential fog to hide terrain edges */}
+      <color attach="background" args={['#000000']} />
+      <fogExp2 attach="fog" args={['#000000', 0.015]} />
 
-      {/* Balanced ambient light allowing deep shadow contrast */}
-      <ambientLight intensity={0.45} color="#cbd5e1" />
+      {/* Fill light so crater shadows still show terrain detail */}
+      <ambientLight intensity={0.2} color="#cbd5e1" />
 
       {/* Low horizontal grazing Sun with long shadows */}
       <SunDirectionalLight sunElevation={sunElevation} />
       <SunOrb sunElevation={sunElevation} />
 
       {/* 3D Earth Sphere driven by earthElevation */}
-      <EarthOrb earthElevation={earthElevation} />
+      <Suspense fallback={null}>
+        <EarthOrb earthElevation={earthElevation} />
+      </Suspense>
 
       {/* Upgraded 5,000-star starfield */}
       <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
@@ -254,20 +274,6 @@ export default function Scene({ sunElevation, earthElevation, heightmapUrl }: Sc
       <Suspense fallback={null}>
         <LunarSurface key={heightmapUrl || 'default'} heightmapUrl={heightmapUrl} />
       </Suspense>
-
-      {/* Coordinate reference grid */}
-      <Grid
-        args={[80, 80]}
-        position={[0, -0.05, 0]}
-        cellSize={2}
-        cellThickness={0.5}
-        cellColor="#1e293b"
-        sectionSize={10}
-        sectionThickness={1}
-        sectionColor="#334155"
-        fadeDistance={65}
-        infiniteGrid
-      />
 
       {/* Lunar Lander */}
       <LunarLander />
@@ -282,6 +288,32 @@ export default function Scene({ sunElevation, earthElevation, heightmapUrl }: Sc
         target={[0, 2, 0]}
         maxPolarAngle={THREE.MathUtils.degToRad(89.5)} // prevent going underneath ground plane
       />
+
+      {/* ── Post-processing ── */}
+      <EffectComposer multisampling={0}>
+        {/*
+          Bloom — makes meshBasicMaterial objects (Sun, Earth, corona rings) appear
+          to physically emit light. mipmapBlur gives a smoother, more cinematic glow.
+          luminanceThreshold=0.1 lets the white Sun disc drive a strong cinematic glow.
+        */}
+        <Bloom
+          intensity={2.0}
+          luminanceThreshold={0.1}
+          luminanceSmoothing={0.9}
+          mipmapBlur
+          blendFunction={BlendFunction.ADD}
+        />
+        {/*
+          Vignette — darkens the four corners slightly, drawing the viewer's eye
+          to the lander and horizon at the center of the frame.
+        */}
+        <Vignette
+          offset={0.4}
+          darkness={0.65}
+          eskil={false}
+          blendFunction={BlendFunction.NORMAL}
+        />
+      </EffectComposer>
     </Canvas>
   );
 }

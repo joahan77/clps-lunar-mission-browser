@@ -1,6 +1,8 @@
 import { useRef, useMemo, Suspense } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Stars, Grid, useTexture } from '@react-three/drei';
+import { OrbitControls, Stars, useTexture } from '@react-three/drei';
+import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
+import { BlendFunction } from 'postprocessing';
 import * as THREE from 'three';
 
 interface SceneProps {
@@ -49,7 +51,7 @@ function LunarSurface({ heightmapUrl }: { heightmapUrl?: string }) {
 
   return (
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow castShadow>
-      <planeGeometry args={[80, 80, 256, 256]} />
+      <planeGeometry args={[80, 80, 512, 512]} />
       <meshStandardMaterial
         color="#71717a"
         roughness={0.88}
@@ -78,7 +80,7 @@ function SunDirectionalLight({ sunElevation }: { sunElevation: number }) {
     <directionalLight
       ref={lightRef}
       position={targetPos}
-      intensity={3.2}
+      intensity={4.0}
       color="#fffbeb"
       castShadow
       shadow-mapSize-width={2048}
@@ -230,15 +232,20 @@ export default function Scene({ sunElevation, earthElevation, heightmapUrl }: Sc
     <Canvas
       shadows
       camera={{ position: [0, 30, 50], fov: 45 }}
-      gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}
+      gl={{
+        antialias: true,
+        toneMapping: THREE.ACESFilmicToneMapping,
+        toneMappingExposure: 1.0,
+        powerPreference: 'high-performance',
+      }}
       className="w-full h-full"
     >
-      {/* Space background & subtle distant fog */}
+      {/* Exponential fog fades terrain edges into black space — hides the square boundary */}
       <color attach="background" args={['#030712']} />
-      <fog attach="fog" args={['#030712', 120, 320]} />
+      <fogExp2 attach="fog" color="#030712" density={0.03} />
 
-      {/* Balanced ambient light allowing deep shadow contrast */}
-      <ambientLight intensity={0.45} color="#cbd5e1" />
+      {/* Deep-space ambient — barely perceptible fill so shadows go truly black */}
+      <ambientLight intensity={0.1} color="#cbd5e1" />
 
       {/* Low horizontal grazing Sun with long shadows */}
       <SunDirectionalLight sunElevation={sunElevation} />
@@ -255,20 +262,6 @@ export default function Scene({ sunElevation, earthElevation, heightmapUrl }: Sc
         <LunarSurface key={heightmapUrl || 'default'} heightmapUrl={heightmapUrl} />
       </Suspense>
 
-      {/* Coordinate reference grid */}
-      <Grid
-        args={[80, 80]}
-        position={[0, -0.05, 0]}
-        cellSize={2}
-        cellThickness={0.5}
-        cellColor="#1e293b"
-        sectionSize={10}
-        sectionThickness={1}
-        sectionColor="#334155"
-        fadeDistance={65}
-        infiniteGrid
-      />
-
       {/* Lunar Lander */}
       <LunarLander />
 
@@ -282,6 +275,32 @@ export default function Scene({ sunElevation, earthElevation, heightmapUrl }: Sc
         target={[0, 2, 0]}
         maxPolarAngle={THREE.MathUtils.degToRad(89.5)} // prevent going underneath ground plane
       />
+
+      {/* ── Post-processing ── */}
+      <EffectComposer multisampling={0}>
+        {/*
+          Bloom — makes meshBasicMaterial objects (Sun, Earth, corona rings) appear
+          to physically emit light. mipmapBlur gives a smoother, more cinematic glow.
+          luminanceThreshold=0.2 targets only bright surfaces, leaving the dark terrain alone.
+        */}
+        <Bloom
+          intensity={1.5}
+          luminanceThreshold={0.2}
+          luminanceSmoothing={0.9}
+          mipmapBlur
+          blendFunction={BlendFunction.ADD}
+        />
+        {/*
+          Vignette — darkens the four corners slightly, drawing the viewer's eye
+          to the lander and horizon at the center of the frame.
+        */}
+        <Vignette
+          offset={0.4}
+          darkness={0.65}
+          eskil={false}
+          blendFunction={BlendFunction.NORMAL}
+        />
+      </EffectComposer>
     </Canvas>
   );
 }
