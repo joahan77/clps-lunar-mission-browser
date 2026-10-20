@@ -6,6 +6,7 @@ import * as THREE from 'three';
 interface SceneProps {
   sunElevation: number; // in degrees (e.g. +1.34° to +1.57°)
   earthElevation: number; // in degrees (e.g. -6.74° to +6.37°)
+  heightmapUrl?: string;
 }
 
 /**
@@ -42,9 +43,9 @@ function calculateEarthPosition(elevation: number): [number, number, number] {
   return [x, y, z];
 }
 
-/** 3D Lunar terrain plane displaced using real Shackleton crater heightmap */
-function LunarSurface() {
-  const heightmap = useTexture('/heightmaps/shackleton_heightmap.png');
+/** 3D Lunar terrain plane displaced using real heightmap */
+function LunarSurface({ heightmapUrl }: { heightmapUrl?: string }) {
+  const heightmap = useTexture(heightmapUrl || '/heightmaps/shackleton_heightmap.png');
 
   return (
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow castShadow>
@@ -224,7 +225,7 @@ function LunarLander() {
   );
 }
 
-export default function Scene({ sunElevation, earthElevation }: SceneProps) {
+export default function Scene({ sunElevation, earthElevation, heightmapUrl }: SceneProps) {
   return (
     <Canvas
       shadows
@@ -251,7 +252,7 @@ export default function Scene({ sunElevation, earthElevation }: SceneProps) {
 
       {/* 3D Lunar Terrain Surface (displaced by real heightmap with 8.0 scale & flatShading) */}
       <Suspense fallback={null}>
-        <LunarSurface />
+        <LunarSurface key={heightmapUrl || 'default'} heightmapUrl={heightmapUrl} />
       </Suspense>
 
       {/* Coordinate reference grid */}

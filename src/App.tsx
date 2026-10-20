@@ -1,41 +1,59 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Loader2, Rocket, AlertTriangle, RefreshCw } from 'lucide-react';
 import Dashboard from './Dashboard';
-import type { DataPoint } from './data';
+import { landingSites } from './data';
+import type { LandingSite, DataPoint } from './data';
 
 export default function App() {
+  const [selectedSite, setSelectedSite] = useState<LandingSite>(landingSites[0]);
   const [telemetryData, setTelemetryData] = useState<DataPoint[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isSiteFetching, setIsSiteFetching] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchTelemetry = () => {
-    setIsLoading(true);
+  const fetchTelemetry = useCallback((site: LandingSite, isInitial = false) => {
+    if (isInitial) {
+      setIsLoading(true);
+    } else {
+      setIsSiteFetching(true);
+    }
     setError(null);
 
-    fetch('/shackleton_data.json')
+    const jsonPath = `/${site.dataFile || `${site.id}_data.json`}`;
+
+    fetch(jsonPath)
       .then((res) => {
         if (!res.ok) {
-          throw new Error(`HTTP ${res.status}: Failed to fetch ephemeris dataset`);
+          throw new Error(`HTTP ${res.status}: Failed to fetch ephemeris dataset from ${jsonPath}`);
         }
-        return res.json() as Promise<DataPoint[]>;
+        return res.json();
       })
-      .then((data) => {
-        if (!Array.isArray(data) || data.length === 0) {
-          throw new Error('Received empty or malformed telemetry dataset');
+      .then((raw) => {
+        const points: DataPoint[] = Array.isArray(raw) ? raw : (raw?.data || []);
+        if (!points || points.length === 0) {
+          throw new Error(`Received empty or malformed telemetry dataset for ${site.name}`);
         }
-        setTelemetryData(data);
+        setTelemetryData(points);
         setIsLoading(false);
+        setIsSiteFetching(false);
       })
       .catch((err) => {
         console.error('Telemetry fetch error:', err);
         setError(err.message || 'Unknown error occurred while loading telemetry.');
         setIsLoading(false);
+        setIsSiteFetching(false);
       });
-  };
+  }, []);
 
   useEffect(() => {
-    fetchTelemetry();
+    fetchTelemetry(selectedSite, true);
   }, []);
+
+  const handleSelectSite = (site: LandingSite) => {
+    if (site.id === selectedSite.id && !error) return;
+    setSelectedSite(site);
+    fetchTelemetry(site, false);
+  };
 
   // Loading Screen with NASA space theme spinner
   if (isLoading) {
@@ -57,10 +75,10 @@ export default function App() {
             <span>INITIALIZING CLPS TELEMETRY FEED</span>
           </div>
           <p className="text-xs text-gray-400">
-            Streaming 30-Day NASA JPL DE421 Ephemeris (/shackleton_data.json)...
+            Streaming 30-Day NASA JPL DE421 Ephemeris ({selectedSite.dataFile})...
           </p>
           <div className="inline-block px-3 py-1 rounded-full bg-gray-900 border border-gray-800 text-[10px] text-gray-500 mt-2">
-            720 Hourly Ephemeris Steps • Lunar South Pole Orbit
+            720 Hourly Ephemeris Steps • 8 Lunar South Pole Landing Sites
           </div>
         </div>
       </div>
@@ -68,7 +86,7 @@ export default function App() {
   }
 
   // Error Screen
-  if (error) {
+  if (error && telemetryData.length === 0) {
     return (
       <div className="flex h-screen w-screen flex-col items-center justify-center bg-gray-950 text-gray-100 font-mono p-6">
         <div className="max-w-md w-full p-6 rounded-2xl bg-gray-900 border border-red-500/30 text-center space-y-4 shadow-2xl">
@@ -80,10 +98,10 @@ export default function App() {
             <p className="text-xs text-red-400 mt-1">{error}</p>
           </div>
           <p className="text-[11px] text-gray-500">
-            Please ensure <code className="text-blue-300">public/shackleton_data.json</code> exists and is accessible.
+            Please ensure <code className="text-blue-300">public/{selectedSite.dataFile}</code> exists and is accessible.
           </p>
           <button
-            onClick={fetchTelemetry}
+            onClick={() => fetchTelemetry(selectedSite, true)}
             className="w-full py-2.5 px-4 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center justify-center gap-2 transition"
           >
             <RefreshCw className="w-3.5 h-3.5" />
@@ -94,5 +112,12 @@ export default function App() {
     );
   }
 
-  return <Dashboard telemetryData={telemetryData} />;
+  return (
+    <Dashboard
+      telemetryData={telemetryData}
+      selectedSite={selectedSite}
+      onSelectSite={handleSelectSite}
+      isSiteFetching={isSiteFetching}
+    />
+  );
 }

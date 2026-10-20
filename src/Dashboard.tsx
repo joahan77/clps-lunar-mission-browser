@@ -8,6 +8,10 @@ import {
   Compass,
   Radio,
   ChevronRight,
+  Loader2,
+  Zap,
+  Battery,
+  Signal,
 } from 'lucide-react';
 import {
   LineChart,
@@ -26,11 +30,23 @@ import type { LandingSite, DataPoint } from './data';
 
 interface DashboardProps {
   telemetryData: DataPoint[];
+  selectedSite: LandingSite;
+  onSelectSite: (site: LandingSite) => void;
+  isSiteFetching: boolean;
 }
 
-export default function Dashboard({ telemetryData }: DashboardProps) {
-  const [selectedSite, setSelectedSite] = useState<LandingSite>(landingSites[0]);
+export default function Dashboard({
+  telemetryData,
+  selectedSite,
+  onSelectSite,
+  isSiteFetching,
+}: DashboardProps) {
   const [currentIndex, setCurrentIndex] = useState<number>(0);
+
+  // Reset slider when telemetry data changes (new site selected)
+  useMemo(() => {
+    setCurrentIndex(0);
+  }, [telemetryData]);
 
   // Active telemetry reading
   const currentPoint = useMemo<DataPoint>(() => {
@@ -55,13 +71,22 @@ export default function Dashboard({ telemetryData }: DashboardProps) {
   const startTime = telemetryData[0]?.time ?? 'Start';
   const endTime = telemetryData[totalPoints - 1]?.time ?? 'End';
 
+  // Comms status styling
+  const commsStatus = currentPoint.commsStatus;
+  const commsColor =
+    commsStatus === 'NOMINAL'
+      ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/30'
+      : commsStatus === 'WEAK'
+      ? 'text-amber-400 bg-amber-400/10 border-amber-400/30'
+      : 'text-red-400 bg-red-400/10 border-red-400/30';
+
   return (
     <div className="flex h-screen w-screen bg-gray-900 text-gray-100 font-sans select-none overflow-hidden">
       {/* ── Left Sidebar (300px) ── */}
-      <aside className="w-[300px] flex-shrink-0 border-r border-gray-800 bg-gray-900/95 flex flex-col justify-between z-10 shadow-2xl">
-        <div className="flex flex-col flex-1 overflow-y-auto">
+      <aside className="w-[300px] flex-shrink-0 border-r border-gray-800 bg-gray-900/95 flex flex-col z-10 shadow-2xl overflow-hidden">
+        <div className="flex flex-col flex-1 overflow-y-auto min-h-0">
           {/* Header */}
-          <div className="p-4 border-b border-gray-800 bg-gray-950/40">
+          <div className="p-4 border-b border-gray-800 bg-gray-950/40 flex-shrink-0">
             <div className="flex items-center gap-2.5">
               <div className="p-1.5 rounded-md bg-blue-500/10 border border-blue-500/30 text-blue-400">
                 <Rocket className="w-5 h-5" />
@@ -78,7 +103,7 @@ export default function Dashboard({ telemetryData }: DashboardProps) {
           </div>
 
           {/* Landing Sites */}
-          <div className="p-4 border-b border-gray-800">
+          <div className="p-4 border-b border-gray-800 flex-shrink-0">
             <div className="flex items-center justify-between mb-2.5">
               <span className="text-[11px] font-mono uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
                 <MapPin className="w-3.5 h-3.5 text-blue-400" />
@@ -89,25 +114,31 @@ export default function Dashboard({ telemetryData }: DashboardProps) {
               </span>
             </div>
 
-            <div className="space-y-1.5">
+            {/* Scrollable site list */}
+            <div className="space-y-1.5 max-h-[200px] overflow-y-auto pr-1 scrollbar-thin">
               {landingSites.map((site) => {
                 const isSelected = selectedSite.id === site.id;
                 return (
                   <button
                     key={site.id}
-                    onClick={() => setSelectedSite(site)}
+                    onClick={() => onSelectSite(site)}
+                    disabled={isSiteFetching}
                     className={`w-full text-left px-3 py-2.5 rounded-lg text-xs transition-all duration-150 flex items-center justify-between border ${
                       isSelected
                         ? 'bg-blue-600/20 text-blue-200 border-blue-500/40 shadow-sm shadow-blue-500/10'
                         : 'bg-gray-800/40 text-gray-400 border-gray-800/60 hover:bg-gray-800 hover:text-gray-200'
-                    }`}
+                    } ${isSiteFetching ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
                   >
                     <span className="font-medium truncate">{site.label}</span>
-                    <ChevronRight
-                      className={`w-3.5 h-3.5 flex-shrink-0 transition-transform ${
-                        isSelected ? 'rotate-90 text-blue-400' : 'text-gray-600'
-                      }`}
-                    />
+                    {isSelected && isSiteFetching ? (
+                      <Loader2 className="w-3.5 h-3.5 flex-shrink-0 text-blue-400 animate-spin" />
+                    ) : (
+                      <ChevronRight
+                        className={`w-3.5 h-3.5 flex-shrink-0 transition-transform ${
+                          isSelected ? 'rotate-90 text-blue-400' : 'text-gray-600'
+                        }`}
+                      />
+                    )}
                   </button>
                 );
               })}
@@ -122,14 +153,25 @@ export default function Dashboard({ telemetryData }: DashboardProps) {
               <div className="flex justify-between">
                 <span className="text-gray-500">Coordinates:</span>
                 <span className="text-blue-300">
-                  {selectedSite.lat.toFixed(1)}°S, {selectedSite.lon.toFixed(1)}°E
+                  {Math.abs(selectedSite.lat).toFixed(1)}°S,{' '}
+                  {selectedSite.lon >= 0
+                    ? `${selectedSite.lon.toFixed(1)}°E`
+                    : `${Math.abs(selectedSite.lon).toFixed(1)}°W`}
+                </span>
+              </div>
+              <div className="flex justify-between items-start">
+                <span className="text-gray-500">Note:</span>
+                <span className="text-gray-400 text-right ml-2 leading-tight" style={{ maxWidth: '160px' }}>
+                  {selectedSite.description.length > 60
+                    ? selectedSite.description.slice(0, 60) + '…'
+                    : selectedSite.description}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Mission Timeline Slider (Hourly steps across 30-day dataset) */}
-          <div className="p-4 border-b border-gray-800">
+          {/* Mission Timeline Slider */}
+          <div className="p-4 border-b border-gray-800 flex-shrink-0">
             <div className="flex items-center justify-between mb-2">
               <span className="text-[11px] font-mono uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-amber-400" />
@@ -157,8 +199,8 @@ export default function Dashboard({ telemetryData }: DashboardProps) {
             </div>
           </div>
 
-          {/* Current Elevation Telemetry Cards */}
-          <div className="p-4 space-y-3">
+          {/* Telemetry Cards */}
+          <div className="p-4 space-y-2.5">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-mono uppercase tracking-wider text-gray-400">
                 Telemetry ({currentPoint.time})
@@ -184,9 +226,6 @@ export default function Dashboard({ telemetryData }: DashboardProps) {
                 </span>
                 <span className="text-xs font-mono text-amber-400/70">deg</span>
               </div>
-              <p className="text-[10px] text-gray-500 mt-1">
-                Sun altitude relative to the local lunar horizon.
-              </p>
             </div>
 
             {/* Earth Elevation Card */}
@@ -207,15 +246,62 @@ export default function Dashboard({ telemetryData }: DashboardProps) {
                 </span>
                 <span className="text-xs font-mono text-blue-400/70">deg</span>
               </div>
-              <p className="text-[10px] text-gray-500 mt-1">
-                Line-of-sight elevation to Earth for direct communication.
-              </p>
             </div>
+
+            {/* Extra telemetry cards (only when data has them) */}
+            {currentPoint.solarIrradiance !== undefined && (
+              <div className="p-3 rounded-xl bg-gradient-to-br from-yellow-500/10 via-yellow-500/5 to-transparent border border-yellow-500/20">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-yellow-300/80 font-medium flex items-center gap-1.5">
+                    <Zap className="w-4 h-4 text-yellow-400" />
+                    Solar Irradiance
+                  </span>
+                </div>
+                <div className="flex items-baseline gap-1 mt-1">
+                  <span className="text-xl font-bold font-mono text-yellow-400">
+                    {currentPoint.solarIrradiance.toFixed(1)}
+                  </span>
+                  <span className="text-xs font-mono text-yellow-400/70">W/m²</span>
+                </div>
+              </div>
+            )}
+
+            {currentPoint.batteryLevel !== undefined && (
+              <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent border border-emerald-500/20">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-emerald-300/80 font-medium flex items-center gap-1.5">
+                    <Battery className="w-4 h-4 text-emerald-400" />
+                    Battery Level
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-xl font-bold font-mono text-emerald-400">
+                    {currentPoint.batteryLevel.toFixed(1)}%
+                  </span>
+                  <div className="flex-1 h-2 bg-gray-800 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-emerald-500 rounded-full transition-all"
+                      style={{ width: `${Math.min(currentPoint.batteryLevel, 100)}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {currentPoint.commsStatus !== undefined && (
+              <div className={`p-2.5 rounded-lg border text-[11px] font-mono flex items-center justify-between ${commsColor}`}>
+                <span className="flex items-center gap-1.5">
+                  <Signal className="w-3.5 h-3.5" />
+                  Comms Status
+                </span>
+                <span className="font-bold">{currentPoint.commsStatus}</span>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Footer */}
-        <div className="p-3 border-t border-gray-800 bg-gray-950/60 flex items-center justify-between text-[10px] font-mono text-gray-500">
+        <div className="p-3 border-t border-gray-800 bg-gray-950/60 flex items-center justify-between text-[10px] font-mono text-gray-500 flex-shrink-0">
           <div className="flex items-center gap-1.5">
             <Compass className="w-3 h-3 text-gray-400" />
             <span>NASA JPL DE421 Ephemeris</span>
@@ -231,7 +317,18 @@ export default function Dashboard({ telemetryData }: DashboardProps) {
           <Scene
             sunElevation={currentPoint.sunElevation}
             earthElevation={currentPoint.earthElevation}
+            heightmapUrl={selectedSite.heightmapUrl}
           />
+
+          {/* Loading overlay when switching sites */}
+          {isSiteFetching && (
+            <div className="absolute inset-0 bg-gray-950/60 backdrop-blur-sm flex items-center justify-center z-20">
+              <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-gray-900/80 border border-blue-500/30 text-blue-300 text-xs font-mono">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Loading {selectedSite.name} ephemeris…
+              </div>
+            </div>
+          )}
 
           {/* Top Left Overlay Badge */}
           <div className="absolute top-4 left-4 z-10 flex items-center gap-2">
@@ -243,7 +340,7 @@ export default function Dashboard({ telemetryData }: DashboardProps) {
             </div>
           </div>
 
-          {/* Top Right Overlay: Sun Elevation Status */}
+          {/* Top Right Overlay: Sun / Earth / Time status */}
           <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
             <div className="px-3 py-1.5 rounded-lg bg-gray-900/80 backdrop-blur border border-gray-700/60 shadow-lg flex items-center gap-3 text-xs font-mono">
               <span className="text-gray-400 flex items-center gap-1">
@@ -278,7 +375,7 @@ export default function Dashboard({ telemetryData }: DashboardProps) {
                 30-Day Solar & Earth Elevation Profile
               </h2>
               <span className="text-[10px] font-mono text-gray-500 bg-gray-800/80 px-1.5 py-0.5 rounded">
-                720 Hourly Ephemeris Readings
+                {selectedSite.name} — 720 Hourly Ephemeris Readings
               </span>
             </div>
             <div className="flex items-center gap-3 text-xs font-mono">
@@ -370,7 +467,7 @@ export default function Dashboard({ telemetryData }: DashboardProps) {
                   }}
                 />
 
-                {/* Sun Elevation Line (dot={false} and isAnimationActive={false} for smooth 720-point rendering) */}
+                {/* Sun Elevation Line */}
                 <Line
                   type="monotone"
                   dataKey="sunElevation"
