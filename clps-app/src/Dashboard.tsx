@@ -25,13 +25,13 @@ import {
   ReferenceLine,
 } from 'recharts';
 import Scene from './Scene';
-import { landingSites } from './data';
-import type { LandingSite, DataPoint } from './data';
+import { useMission } from './context/MissionContext';
+import type { DataPoint } from './data';
 
 interface DashboardProps {
   telemetryData: DataPoint[];
-  selectedSite: LandingSite;
-  onSelectSite: (site: LandingSite) => void;
+  selectedSite: any;
+  onSelectSite: (site: any) => void;
   isSiteFetching: boolean;
 }
 
@@ -41,6 +41,7 @@ export default function Dashboard({
   onSelectSite,
   isSiteFetching,
 }: DashboardProps) {
+  const { SITES } = useMission();
   const [currentIndex, setCurrentIndex] = useState<number>(0);
 
   // Reset slider when telemetry data changes (new site selected)
@@ -51,7 +52,7 @@ export default function Dashboard({
   // Active telemetry reading
   const currentPoint = useMemo<DataPoint>(() => {
     if (!telemetryData || telemetryData.length === 0) {
-      return { time: '00:00', sunElevation: 0, earthElevation: 0 };
+      return { time: '00:00', sunElevation: 0, earthElevation: 0 } as DataPoint;
     }
     const idx = Math.min(Math.max(currentIndex, 0), telemetryData.length - 1);
     return telemetryData[idx];
@@ -67,7 +68,8 @@ export default function Dashboard({
     return Math.max(Math.floor(telemetryData.length / 10), 1);
   }, [telemetryData]);
 
-  const totalPoints = telemetryData.length;
+  // SAFETY CHECK: Prevent crash if data is still loading
+  const totalPoints = telemetryData?.length || 0;
   const startTime = telemetryData[0]?.time ?? 'Start';
   const endTime = telemetryData[totalPoints - 1]?.time ?? 'End';
 
@@ -76,7 +78,7 @@ export default function Dashboard({
   const commsColor =
     commsStatus === 'NOMINAL'
       ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/30'
-      : commsStatus === 'WEAK'
+      : commsStatus === 'DEGRADED' || commsStatus === 'WEAK'
       ? 'text-amber-400 bg-amber-400/10 border-amber-400/30'
       : 'text-red-400 bg-red-400/10 border-red-400/30';
 
@@ -110,13 +112,13 @@ export default function Dashboard({
                 Landing Sites
               </span>
               <span className="text-[10px] font-mono text-gray-500">
-                {landingSites.length} Targets
+                {SITES.length} Targets
               </span>
             </div>
 
             {/* Scrollable site list */}
             <div className="space-y-1.5 max-h-[200px] overflow-y-auto pr-1 scrollbar-thin">
-              {landingSites.map((site) => {
+              {SITES.map((site: any) => {
                 const isSelected = selectedSite.id === site.id;
                 return (
                   <button
@@ -162,7 +164,8 @@ export default function Dashboard({
               <div className="flex justify-between items-start">
                 <span className="text-gray-500">Note:</span>
                 <span className="text-gray-400 text-right ml-2 leading-tight" style={{ maxWidth: '160px' }}>
-                  {selectedSite.description.length > 60
+                  {/* SAFETY CHECK: The ?. prevents crash if description is missing */}
+                  {selectedSite.description?.length > 60
                     ? selectedSite.description.slice(0, 60) + '…'
                     : selectedSite.description}
                 </span>
@@ -248,7 +251,7 @@ export default function Dashboard({
               </div>
             </div>
 
-            {/* Extra telemetry cards (only when data has them) */}
+            {/* Extra telemetry cards */}
             {currentPoint.solarIrradiance !== undefined && (
               <div className="p-3 rounded-xl bg-gradient-to-br from-yellow-500/10 via-yellow-500/5 to-transparent border border-yellow-500/20">
                 <div className="flex items-center justify-between mb-1">
@@ -331,7 +334,7 @@ export default function Dashboard({
           )}
 
           {/* Top Left Overlay Badge */}
-          <div className="absolute top-4 left-4 z-10 flex items-center gap-2">
+          <div className="absolute top-20 left-4 z-10 flex items-center gap-2">
             <div className="px-3 py-1.5 rounded-lg bg-slate-900/40 backdrop-blur-xl border border-white/10 shadow-2xl flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
               <span className="text-xs font-mono font-medium text-gray-200">
@@ -341,7 +344,7 @@ export default function Dashboard({
           </div>
 
           {/* Top Right Overlay: Sun / Earth / Time status */}
-          <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+          <div className="absolute top-20 right-4 z-10 flex items-center gap-2">
             <div className="px-3 py-1.5 rounded-lg bg-slate-900/40 backdrop-blur-xl border border-white/10 shadow-2xl flex items-center gap-3 text-xs font-mono">
               <span className="text-gray-400 flex items-center gap-1">
                 <Sun className="w-3.5 h-3.5 text-amber-400" />
@@ -426,8 +429,8 @@ export default function Dashboard({
                   }}
                   itemStyle={{ color: '#e5e7eb' }}
                   labelStyle={{ color: '#9ca3af', fontWeight: 'bold' }}
-                  formatter={(value: number) => [
-                    `${value > 0 ? '+' : ''}${value.toFixed(2)}°`,
+                  formatter={(value: any) => [
+                    `${Number(value) > 0 ? '+' : ''}${Number(value).toFixed(2)}°`,
                     '',
                   ]}
                 />
