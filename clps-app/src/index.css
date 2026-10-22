@@ -1,10 +1,284 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Space+Grotesk:wght@300..700&family=Unbounded:wght@200..900&display=swap');
+@import "tailwindcss";
+
+/* Fallback @font-face declarations for licensed fonts */
+@font-face {
+  font-family: 'nbarchitekt';
+  src: local('Space Grotesk'), local('SpaceGrotesk-Regular'), url('/fonts/nbarchitekt.woff2') format('woff2');
+  font-weight: 400 700;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Aeonik';
+  src: local('Inter'), local('Inter-Regular'), url('/fonts/aeonik.woff2') format('woff2');
+  font-weight: 400 500;
+  font-display: swap;
+}
+
+@theme {
+  /* ========================================================
+     THEME 1: OHZI (t1-) - Typography Only
+     ======================================================== */
+  --color-t1-pure-white: #ffffff;
+  --color-t1-void-black: #000000;
+  --color-t1-carbon: #111111;
+  --color-t1-fog: #f5f5f7;
+  --color-t1-ash: #cfcfcf;
+
+  --font-t1-unbounded: 'Unbounded', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  --text-t1-caption: 14px;
+  --text-t1-caption--line-height: 1.2;
+  --text-t1-caption--letter-spacing: 2.63px;
+
+  --text-t1-body-sm: 16px;
+  --text-t1-body-sm--line-height: 1.2;
+  --text-t1-body-sm--letter-spacing: 3.01px;
+
+  --text-t1-body: 18px;
+  --text-t1-body--line-height: 1.2;
+  --text-t1-body--letter-spacing: 2.38px;
+
+  --text-t1-subheading: 24px;
+  --text-t1-subheading--line-height: 1.2;
+  --text-t1-subheading--letter-spacing: 2.66px;
+
+  --text-t1-heading-sm: 30px;
+  --text-t1-heading-sm--line-height: 1.2;
+  --text-t1-heading-sm--letter-spacing: 2.61px;
+
+  --text-t1-heading: 32px;
+  --text-t1-heading--line-height: 1.2;
+  --text-t1-heading--letter-spacing: 2.27px;
+
+  --text-t1-display: 38px;
+  --text-t1-display--line-height: 1.2;
+  --text-t1-display--letter-spacing: 2.55px;
+
+  --spacing-t1-5: 5px;
+  --spacing-t1-12: 12px;
+  --spacing-t1-15: 15px;
+  --spacing-t1-19: 19px;
+  --spacing-t1-20: 20px;
+  --spacing-t1-21: 21px;
+  --spacing-t1-25: 25px;
+  --spacing-t1-30: 30px;
+
+  /* ========================================================
+     THEME 2: ACTIVE THEORY (t2-) - Shell, Cards, Buttons, HUD
+     ======================================================== */
+  --color-t2-void-black: #000000;
+  --color-t2-ghost-white: #ffffff;
+  --color-t2-ash-border: #4d4d4d;
+  --color-t2-smoke: #808080;
+  --color-t2-fog: #999999;
+  --color-t2-pale-mist: #c6c6c6;
+  --color-t2-dusk-violet: #343755;
+
+  --font-t2-nbarchitekt: 'nbarchitekt', 'Space Grotesk', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-t2-times: 'Times New Roman', 'Times', Georgia, serif;
+  --font-t2-arial: 'Arial', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  --text-t2-caption: 10px;
+  --text-t2-caption--line-height: 1.5;
+
+  --text-t2-body-sm: 12px;
+  --text-t2-body-sm--line-height: 1.5;
+
+  --text-t2-body: 14px;
+  --text-t2-body--line-height: 1.5;
+
+  --spacing-t2-4: 4px;
+  --spacing-t2-6: 6px;
+  --spacing-t2-12: 12px;
+  --spacing-t2-13: 13px;
+  --spacing-t2-14: 14px;
+  --spacing-t2-16: 16px;
+  --spacing-t2-18: 18px;
+  --spacing-t2-28: 28px;
+
+  --radius-t2-md: 5px;
+  --radius-t2-xl: 12px;
+  --radius-t2-full: 500px;
+
+  /* ========================================================
+     THEME 3: LUSION (t3-) - Mission Planner Table Card
+     ======================================================== */
+  --color-t3-lavender-mist: #f0f1fa;
+  --color-t3-paper-white: #ffffff;
+  --color-t3-ink: #000000;
+  --color-t3-graphite: #2b2e3a;
+  --color-t3-haze: #e4e6ef;
+  --color-t3-slate-hollow: #34393f;
+  --color-t3-electric-indigo: #1a2ffb;
+  --color-t3-acid-lime: #c1ff00;
+
+  --font-t3-aeonik: 'Aeonik', 'Inter', 'DM Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  --text-t3-caption: 12px;
+  --text-t3-caption--line-height: 1.5;
+  --text-t3-caption--letter-spacing: -0.24px;
+
+  --text-t3-body-sm: 14px;
+  --text-t3-body-sm--line-height: 1.4;
+  --text-t3-body-sm--letter-spacing: -0.28px;
+
+  --text-t3-body: 16px;
+  --text-t3-body--line-height: 1.4;
+  --text-t3-body--letter-spacing: -0.32px;
+
+  --text-t3-subheading: 20px;
+  --text-t3-subheading--line-height: 1.2;
+  --text-t3-subheading--letter-spacing: -0.4px;
+
+  --text-t3-heading-sm: 26px;
+  --text-t3-heading-sm--line-height: 1.2;
+  --text-t3-heading-sm--letter-spacing: -0.52px;
+
+  --text-t3-heading: 38px;
+  --text-t3-heading--line-height: 1.15;
+  --text-t3-heading--letter-spacing: -0.76px;
+
+  --text-t3-heading-lg: 50px;
+  --text-t3-heading-lg--line-height: 1.1;
+  --text-t3-heading-lg--letter-spacing: -1px;
+
+  --text-t3-display: 144px;
+  --text-t3-display--line-height: 0.9;
+  --text-t3-display--letter-spacing: -2.88px;
+
+  --spacing-t3-4: 4px;
+  --spacing-t3-12: 12px;
+  --spacing-t3-16: 16px;
+  --spacing-t3-24: 24px;
+  --spacing-t3-72: 72px;
+  --spacing-t3-80: 80px;
+  --spacing-t3-168: 168px;
+  --spacing-t3-216: 216px;
+
+  --radius-t3-sm: 3px;
+  --radius-t3-xl: 15px;
+  --radius-t3-2xl: 18px;
+  --radius-t3-full: 76.5px;
+  --radius-t3-full-2: 87.5px;
+  --radius-t3-full-3: 100px;
+
+  /* ========================================================
+     MOTION TOKENS (shared choreography)
+     ======================================================== */
+  --duration-instant: 100ms;
+  --duration-fast: 200ms;
+  --duration-normal: 400ms;
+  --duration-slow: 800ms;
+  --duration-cinematic: 2400ms;
+
+  /* Easing — gravitational, no bounce */
+  --ease-gravitational: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-lift-off:      cubic-bezier(0.0, 0.0, 0.2, 1);
+  --ease-descent:       cubic-bezier(0.4, 0, 1, 1);
+
+  --stagger-row:  60ms;
+  --stagger-card: 80ms;
+
+  /* Illumination Heatmap Perceptual Ramp (polar UV shader) */
+  --color-heatmap-void:  #000000;   /* PSR — permanently shadowed, 0 sun hours */
+  --color-heatmap-cold:  #1a1040;   /* <5% illumination */
+  --color-heatmap-cool:  #2d1b8a;   /* 5–20% — cool violet */
+  --color-heatmap-mid:   #7c3aed;   /* 20–40% — purple */
+  --color-heatmap-warm:  #f97316;   /* 40–70% — amber */
+  --color-heatmap-hot:   #fbbf24;   /* 70–90% — warm yellow */
+  --color-heatmap-peak:  #ffffff;   /* 90–100% — white hot */
+
+  /* ========================================================
+     DATA TOKENS: Chart lines, telemetry status
+     ======================================================== */
+  --color-data-sun: #fbbf24;
+  --color-data-sun-active: #f59e0b;
+  --color-data-earth: #60a5fa;
+  --color-data-earth-active: #3b82f6;
+  --color-data-nominal: #10b981;
+  --color-data-nominal-text: #34d399;
+  --color-data-degraded: #f59e0b;
+  --color-data-degraded-text: #fbbf24;
+  --color-data-blackout: #ef4444;
+  --color-data-blackout-text: #f87171;
+  --color-data-cursor: #10b981;
+}
 
 html, body, #root {
   height: 100%;
   margin: 0;
   padding: 0;
   overflow: hidden;
+  background-color: #000000;
+  color: #ffffff;
+}
+
+/* Global strict rule: no box-shadows on UI, no gradients on UI */
+*, *::before, *::after {
+  box-shadow: none !important;
+}
+
+/* Scrollbar styling for lists */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #4d4d4d;
+  border-radius: 2px;
+}
+
+/* Tabular numerals for all telemetry readouts */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* Lime shimmer — one-shot on #1 ranked row */
+@keyframes lime-shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+.lime-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 30%,
+    rgba(193, 255, 0, 0.18) 50%,
+    transparent 70%
+  );
+  background-size: 200% 100%;
+  animation: lime-shimmer 1.4s var(--ease-gravitational) 0.5s 1 forwards;
+}
+
+/* Scan-line boot effect */
+@keyframes scan {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+.boot-scanline {
+  animation: scan 2s linear infinite;
+}
+
+/* Reduced-motion: simplify everything to opacity-only fades */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 200ms !important;
+  }
+}
+
+/* Descent overlay */
+.descent-overlay {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 100;
+  transition: opacity var(--duration-normal) var(--ease-gravitational);
 }

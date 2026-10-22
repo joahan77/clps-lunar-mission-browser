@@ -3,19 +3,27 @@ import { Loader2, Rocket, AlertTriangle, RefreshCw } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Dashboard from '../Dashboard';
 import { useMission } from '../context/MissionContext';
+import { useAppStore } from '../store/useAppStore';
 import type { DataPoint } from '../data';
+import DescentOverlay from '../components/DescentOverlay';
 
 export default function MissionControl() {
   const { siteId } = useParams();
   const navigate = useNavigate();
   const { SITES, selectedSite, setSelectedSite } = useMission();
+  const { setPhase, setOverlayOpacity, reducedMotion } = useAppStore();
 
   const [telemetryData, setTelemetryData] = useState<DataPoint[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSiteFetching, setIsSiteFetching] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 1. Sync URL to Context (e.g. if you refresh the page)
+  // Crossfade in on mount
+  useEffect(() => {
+    setOverlayOpacity(0);
+  }, [setOverlayOpacity]);
+
+  // 1. Sync URL to Context
   useEffect(() => {
     const siteFromUrl = SITES.find((s: any) => s.id === siteId);
     if (siteFromUrl && siteFromUrl.id !== selectedSite.id) {
@@ -61,33 +69,44 @@ export default function MissionControl() {
   // 3. Initial Fetch
   useEffect(() => {
     fetchTelemetry(selectedSite, true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 4. Handle Dropdown Change inside the Dashboard
   const handleSelectSite = (site: any) => {
     if (site.id === selectedSite.id && !error) return;
     setSelectedSite(site);
-    navigate(`/mission/${site.id}`); // Update the URL
+    navigate(`/mission/${site.id}`);
     fetchTelemetry(site, false);
+  };
+
+  // 5. Reverse Descent (Return to Orbit)
+  const handleReturnToOrbit = () => {
+    if (reducedMotion) {
+      navigate('/');
+      return;
+    }
+    setPhase('returning');
+    setOverlayOpacity(1);
+    setTimeout(() => {
+      navigate('/');
+    }, 350);
   };
 
   if (isLoading) {
     return (
-      <div className="flex h-screen w-screen flex-col items-center justify-center bg-gray-950 text-gray-100 font-mono select-none">
-        <div className="relative flex items-center justify-center mb-8">
-          <div className="absolute w-28 h-28 rounded-full border border-blue-500/20 animate-ping" />
-          <div className="w-20 h-20 rounded-full border-2 border-dashed border-blue-400/50 animate-spin" />
-          <div className="absolute p-3 rounded-full bg-blue-500/10 border border-blue-400/40 text-blue-400">
-            <Rocket className="w-8 h-8 animate-pulse" />
+      <div className="flex h-screen w-screen flex-col items-center justify-center bg-t2-void-black text-t2-ghost-white font-t2-nbarchitekt select-none">
+        <div className="relative flex items-center justify-center mb-t2-18">
+          <div className="w-16 h-16 rounded-t2-full border border-t2-ash-border animate-spin" />
+          <div className="absolute p-3 rounded-t2-full bg-t2-dusk-violet text-t2-ghost-white">
+            <Rocket className="w-6 h-6 animate-pulse" />
           </div>
         </div>
         <div className="text-center space-y-2">
-          <div className="flex items-center justify-center gap-2 text-sm font-bold tracking-widest uppercase text-blue-400">
-            <Loader2 className="w-4 h-4 animate-spin" />
+          <div className="font-t1-unbounded text-t1-caption font-semibold tracking-[2.63px] uppercase text-t1-pure-white flex items-center justify-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin text-t2-pale-mist" />
             <span>INITIALIZING CLPS TELEMETRY FEED</span>
           </div>
-          <p className="text-xs text-gray-400">
+          <p className="font-t2-nbarchitekt text-t2-caption text-t2-pale-mist">
             Streaming 30-Day NASA JPL DE421 Ephemeris ({selectedSite.id}_data.json)...
           </p>
         </div>
@@ -97,18 +116,20 @@ export default function MissionControl() {
 
   if (error && telemetryData.length === 0) {
     return (
-      <div className="flex h-screen w-screen flex-col items-center justify-center bg-gray-950 text-gray-100 font-mono p-6">
-        <div className="max-w-md w-full p-6 rounded-2xl bg-gray-900 border border-red-500/30 text-center space-y-4 shadow-2xl">
-          <div className="w-12 h-12 mx-auto rounded-full bg-red-500/10 border border-red-500/40 flex items-center justify-center text-red-400">
+      <div className="flex h-screen w-screen flex-col items-center justify-center bg-t2-void-black text-t2-ghost-white font-t2-nbarchitekt p-6">
+        <div className="max-w-md w-full p-t2-28 rounded-t2-xl bg-black/50 backdrop-blur-[4px] border border-data-blackout text-center space-y-4">
+          <div className="w-12 h-12 mx-auto rounded-t2-full bg-data-blackout/20 border border-data-blackout flex items-center justify-center text-data-blackout-text">
             <AlertTriangle className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-base font-bold text-gray-100">Telemetry Feed Offline</h2>
-            <p className="text-xs text-red-400 mt-1">{error}</p>
+            <h2 className="font-t1-unbounded text-t1-body font-bold text-t1-pure-white tracking-[2.38px]">
+              Telemetry Feed Offline
+            </h2>
+            <p className="font-t2-nbarchitekt text-t2-body-sm text-data-blackout-text mt-1">{error}</p>
           </div>
           <button
             onClick={() => fetchTelemetry(selectedSite, true)}
-            className="w-full py-2.5 px-4 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center justify-center gap-2 transition"
+            className="w-full py-t2-6 px-t2-18 rounded-t2-full bg-t2-dusk-violet text-t2-ghost-white font-t2-nbarchitekt text-t2-body font-bold flex items-center justify-center gap-2 hover:opacity-90 transition"
           >
             <RefreshCw className="w-3.5 h-3.5" />
             Retry Telemetry Ingestion
@@ -119,17 +140,26 @@ export default function MissionControl() {
   }
 
   return (
-    <div className="h-screen w-full relative">
-      {/* TOP NAVIGATION BUTTONS */}
+    <div className="h-screen w-full relative overflow-hidden bg-t2-void-black text-t2-ghost-white">
+      {/* ── Return/Descent Crossfade Overlay ── */}
+      <DescentOverlay />
+
+      {/* ── TOP FLOATING NAVIGATION CHROME ── */}
       <div className="absolute top-4 left-4 z-50">
-         <button onClick={() => navigate('/')} className="bg-slate-800 text-white px-4 py-2 rounded font-mono text-sm hover:bg-slate-700 transition-colors shadow-lg">
-            ← Back to Orbit
-         </button>
+        <button
+          onClick={handleReturnToOrbit}
+          className="font-t2-nbarchitekt text-t2-body-sm text-t2-ghost-white bg-black/50 backdrop-blur-[4px] border border-t2-ash-border rounded-t2-md px-t2-14 py-t2-6 hover:bg-white/[0.08] hover:border-t2-smoke transition-colors focus:outline-none focus:ring-1 focus:ring-t2-ghost-white"
+        >
+          ← Return to Orbit
+        </button>
       </div>
       <div className="absolute top-4 right-4 z-50">
-         <button onClick={() => navigate('/compare')} className="bg-blue-600 text-white px-4 py-2 rounded font-mono text-sm hover:bg-blue-500 transition-colors shadow-lg">
-            Compare Sites
-         </button>
+        <button
+          onClick={() => navigate('/compare')}
+          className="font-t2-nbarchitekt text-t2-body font-bold text-t2-ghost-white bg-t2-dusk-violet border border-t2-dusk-violet rounded-t2-full px-t2-18 py-t2-4 hover:opacity-90 transition-opacity focus:outline-none focus:ring-1 focus:ring-t2-ghost-white"
+        >
+          Compare Sites
+        </button>
       </div>
 
       <Dashboard
