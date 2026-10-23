@@ -1,7 +1,8 @@
 import { useEffect, useState, useMemo, useRef, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMission } from '../context/MissionContext';
-import { Loader2, ArrowUpDown, ArrowUp, ArrowDown, Radar as RadarIcon, X, CheckSquare, Square } from 'lucide-react';
+import { useAppStore } from '../store/useAppStore';
+import { Loader2, ArrowUpDown, ArrowUp, ArrowDown, Radar as RadarIcon, X, CheckSquare, Square, Info, BookOpen, ShieldCheck } from 'lucide-react';
 import {
   RadarChart,
   Radar,
@@ -14,6 +15,7 @@ import {
 } from 'recharts';
 import DemoMode from '../components/DemoMode';
 import FpsMonitor from '../components/FpsMonitor';
+import FooterAttribution from '../components/FooterAttribution';
 
 type SortKey = 'rank' | 'name' | 'sunHours' | 'commsUptime' | 'avgSolar';
 type SortDirection = 'asc' | 'desc';
@@ -21,6 +23,7 @@ type SortDirection = 'asc' | 'desc';
 export default function ComparisonView() {
   const navigate = useNavigate();
   const { SITES } = useMission();
+  const { setActiveExplainerMetric, setDataMethodsModalOpen } = useAppStore();
   const [scores, setScores] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -45,17 +48,23 @@ export default function ComparisonView() {
           const json = await res.json();
           const data = json.data || json;
 
-          const sunHours = data.filter((d: any) => d.sunElevation > 0).length;
-          const commsHours = data.filter((d: any) => d.commsStatus !== 'BLACKOUT').length;
-          const totalHours = data.length;
-          
-          const avgSolar = data.reduce((acc: number, d: any) => acc + (d.solarIrradiance || 0), 0) / totalHours;
+          let sunHours = json.summary?.sunHours;
+          let commsUptime = json.summary?.commsUptimePercent?.toFixed(1);
+          let avgSolar = json.summary?.avgSolarIrradiance?.toFixed(1);
+
+          if (sunHours === undefined) {
+            sunHours = data.filter((d: any) => d.sunVisible ?? d.sunElevation > 0).length;
+            const commsHours = data.filter((d: any) => d.earthVisible ?? (d.commsStatus !== 'BLACKOUT')).length;
+            const totalHours = data.length || 720;
+            commsUptime = ((commsHours / totalHours) * 100).toFixed(1);
+            avgSolar = (data.reduce((acc: number, d: any) => acc + (d.solarIrradiance || 0), 0) / totalHours).toFixed(1);
+          }
 
           results.push({
             ...site,
             sunHours,
-            commsUptime: ((commsHours / totalHours) * 100).toFixed(1),
-            avgSolar: avgSolar.toFixed(1),
+            commsUptime,
+            avgSolar,
           });
         } catch (err) {
           console.error(`Failed to load data for ${site.name}`, err);
@@ -203,7 +212,15 @@ export default function ComparisonView() {
             ← Return to Orbit
           </button>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setDataMethodsModalOpen(true)}
+              className="font-t2-nbarchitekt text-t2-body-sm text-t2-ghost-white bg-black/40 hover:bg-black/60 border border-t2-ash-border rounded-t2-md px-3 py-1.5 flex items-center gap-1.5 transition-colors"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Data & Methods</span>
+            </button>
+
             {selectedForRadar.length >= 2 && (
               <button
                 onClick={() => setShowRadarModal(true)}
@@ -235,13 +252,25 @@ export default function ComparisonView() {
                     <RadarIcon className="w-3.5 h-3.5 mx-auto text-t3-haze/60" />
                   </th>
                   <th className="p-4 sm:p-5 font-medium">
-                    <button
-                      onClick={() => handleSort('rank')}
-                      className="flex items-center gap-1.5 hover:text-t3-paper-white focus:outline-none focus:ring-1 focus:ring-t3-electric-indigo rounded px-1 py-0.5"
-                    >
-                      <span>RANK</span>
-                      {renderSortIcon('rank')}
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => handleSort('rank')}
+                        className="flex items-center gap-1.5 hover:text-t3-paper-white focus:outline-none focus:ring-1 focus:ring-t3-electric-indigo rounded px-1 py-0.5"
+                      >
+                        <span>RANK</span>
+                        {renderSortIcon('rank')}
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveExplainerMetric('rankingScore');
+                        }}
+                        title="How is rank computed?"
+                        className="text-t3-haze/60 hover:text-indigo-400 p-0.5 transition-colors"
+                      >
+                        <Info className="w-3 h-3" />
+                      </button>
+                    </div>
                   </th>
                   <th className="p-4 sm:p-5 font-medium">
                     <button
@@ -253,31 +282,67 @@ export default function ComparisonView() {
                     </button>
                   </th>
                   <th className="p-4 sm:p-5 font-medium">
-                    <button
-                      onClick={() => handleSort('sunHours')}
-                      className="flex items-center gap-1.5 hover:text-t3-paper-white focus:outline-none focus:ring-1 focus:ring-t3-electric-indigo rounded px-1 py-0.5"
-                    >
-                      <span>SUN HOURS</span>
-                      {renderSortIcon('sunHours')}
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => handleSort('sunHours')}
+                        className="flex items-center gap-1.5 hover:text-t3-paper-white focus:outline-none focus:ring-1 focus:ring-t3-electric-indigo rounded px-1 py-0.5"
+                      >
+                        <span>SUN HOURS</span>
+                        {renderSortIcon('sunHours')}
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveExplainerMetric('sunHours');
+                        }}
+                        title="How are sun hours computed?"
+                        className="text-t3-haze/60 hover:text-indigo-400 p-0.5 transition-colors"
+                      >
+                        <Info className="w-3 h-3" />
+                      </button>
+                    </div>
                   </th>
                   <th className="p-4 sm:p-5 font-medium">
-                    <button
-                      onClick={() => handleSort('commsUptime')}
-                      className="flex items-center gap-1.5 hover:text-t3-paper-white focus:outline-none focus:ring-1 focus:ring-t3-electric-indigo rounded px-1 py-0.5"
-                    >
-                      <span>COMMS UPTIME</span>
-                      {renderSortIcon('commsUptime')}
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => handleSort('commsUptime')}
+                        className="flex items-center gap-1.5 hover:text-t3-paper-white focus:outline-none focus:ring-1 focus:ring-t3-electric-indigo rounded px-1 py-0.5"
+                      >
+                        <span>COMMS UPTIME</span>
+                        {renderSortIcon('commsUptime')}
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveExplainerMetric('commsUptime');
+                        }}
+                        title="How is comms uptime computed?"
+                        className="text-t3-haze/60 hover:text-indigo-400 p-0.5 transition-colors"
+                      >
+                        <Info className="w-3 h-3" />
+                      </button>
+                    </div>
                   </th>
                   <th className="p-4 sm:p-5 font-medium">
-                    <button
-                      onClick={() => handleSort('avgSolar')}
-                      className="flex items-center gap-1.5 hover:text-t3-paper-white focus:outline-none focus:ring-1 focus:ring-t3-electric-indigo rounded px-1 py-0.5"
-                    >
-                      <span>AVG SOLAR</span>
-                      {renderSortIcon('avgSolar')}
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => handleSort('avgSolar')}
+                        className="flex items-center gap-1.5 hover:text-t3-paper-white focus:outline-none focus:ring-1 focus:ring-t3-electric-indigo rounded px-1 py-0.5"
+                      >
+                        <span>AVG SOLAR</span>
+                        {renderSortIcon('avgSolar')}
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveExplainerMetric('solarIrradiance');
+                        }}
+                        title="How is solar irradiance computed?"
+                        className="text-t3-haze/60 hover:text-indigo-400 p-0.5 transition-colors"
+                      >
+                        <Info className="w-3 h-3" />
+                      </button>
+                    </div>
                   </th>
                 </tr>
               </thead>
@@ -451,6 +516,7 @@ export default function ComparisonView() {
         )}
       </div>
 
+      <FooterAttribution />
       <FpsMonitor />
       <DemoMode />
     </div>

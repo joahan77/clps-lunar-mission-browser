@@ -41,6 +41,16 @@ interface AppState {
   bootComplete: boolean;
   setBootComplete: (v: boolean) => void;
 
+  // Terrain Vertical Exaggeration (1.0x Realistic, 1.5x, 2.0x Enhanced, 3.0x Dramatic)
+  verticalExaggeration: number;
+  setVerticalExaggeration: (v: number) => void;
+
+  // Scientific Transparency Modals
+  dataMethodsModalOpen: boolean;
+  setDataMethodsModalOpen: (open: boolean) => void;
+  activeExplainerMetric: string | null;
+  setActiveExplainerMetric: (metric: string | null) => void;
+
   // Radar chart selection (comparison view)
   radarSelectedIds: string[];
   toggleRadarSite: (id: string) => void;
@@ -76,6 +86,14 @@ export const useAppStore = create<AppState>((set) => ({
 
   bootComplete: false,
   setBootComplete: (v) => set({ bootComplete: v }),
+
+  verticalExaggeration: 1.5,
+  setVerticalExaggeration: (v) => set({ verticalExaggeration: v }),
+
+  dataMethodsModalOpen: false,
+  setDataMethodsModalOpen: (open) => set({ dataMethodsModalOpen: open }),
+  activeExplainerMetric: null,
+  setActiveExplainerMetric: (metric) => set({ activeExplainerMetric: metric }),
 
   radarSelectedIds: [],
   toggleRadarSite: (id) =>

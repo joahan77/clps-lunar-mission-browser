@@ -12,6 +12,9 @@ import {
   Zap,
   Battery,
   Signal,
+  Info,
+  BookOpen,
+  Layers,
 } from 'lucide-react';
 import {
   LineChart,
@@ -26,12 +29,14 @@ import {
 } from 'recharts';
 import Scene from './Scene';
 import { useMission } from './context/MissionContext';
+import { useAppStore } from './store/useAppStore';
 import type { DataPoint } from './data';
 import { useCountUp } from './hooks/useCountUp';
 import { useDecodeScramble } from './hooks/useDecodeScramble';
 import { useMissionClock } from './hooks/useMissionClock';
 import DemoMode from './components/DemoMode';
 import FpsMonitor from './components/FpsMonitor';
+import FooterAttribution from './components/FooterAttribution';
 
 interface DashboardProps {
   telemetryData: DataPoint[];
@@ -47,6 +52,12 @@ export default function Dashboard({
   isSiteFetching,
 }: DashboardProps) {
   const { SITES } = useMission();
+  const {
+    verticalExaggeration,
+    setVerticalExaggeration,
+    setActiveExplainerMetric,
+    setDataMethodsModalOpen,
+  } = useAppStore();
   const [currentIndex, setCurrentIndex] = useState<number>(0);
 
   // Real-time ticking mission clock
@@ -234,9 +245,21 @@ export default function Dashboard({
                   <Sun className="w-4 h-4 text-data-sun" />
                   Sun Elevation
                 </span>
-                <span className="font-t2-nbarchitekt text-t2-caption px-2 py-0.5 rounded-t2-full border border-t2-ash-border text-t2-ghost-white bg-black/40">
-                  {currentPoint.sunElevation >= 0 ? 'DAYLIGHT' : 'ECLIPSE'}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-mono text-[9px] px-1.5 py-0.5 rounded border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 font-bold">
+                    REAL: SPICE
+                  </span>
+                  <button
+                    onClick={() => setActiveExplainerMetric('sunElevation')}
+                    title="How is solar elevation computed?"
+                    className="text-t2-smoke hover:text-indigo-400 p-0.5 transition-colors"
+                  >
+                    <Info className="w-3.5 h-3.5" />
+                  </button>
+                  <span className="font-t2-nbarchitekt text-t2-caption px-2 py-0.5 rounded-t2-full border border-t2-ash-border text-t2-ghost-white bg-black/40">
+                    {currentPoint.sunElevation >= 0 ? 'DAYLIGHT' : 'ECLIPSE'}
+                  </span>
+                </div>
               </div>
               <div className="flex items-baseline gap-1 mt-1">
                 <span className="font-t1-unbounded text-t1-subheading font-bold text-t1-pure-white tracking-[2.66px] tabular-nums">
@@ -254,9 +277,21 @@ export default function Dashboard({
                   <Globe className="w-4 h-4 text-data-earth" />
                   Earth Elevation
                 </span>
-                <span className="font-t2-nbarchitekt text-t2-caption px-2 py-0.5 rounded-t2-full border border-t2-ash-border text-t2-ghost-white bg-black/40">
-                  {currentPoint.earthElevation >= 0 ? 'LOS ACTIVE' : 'NO COMM'}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-mono text-[9px] px-1.5 py-0.5 rounded border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 font-bold">
+                    REAL: SPICE
+                  </span>
+                  <button
+                    onClick={() => setActiveExplainerMetric('earthElevation')}
+                    title="How is Earth elevation computed?"
+                    className="text-t2-smoke hover:text-indigo-400 p-0.5 transition-colors"
+                  >
+                    <Info className="w-3.5 h-3.5" />
+                  </button>
+                  <span className="font-t2-nbarchitekt text-t2-caption px-2 py-0.5 rounded-t2-full border border-t2-ash-border text-t2-ghost-white bg-black/40">
+                    {currentPoint.earthElevation >= 0 ? 'LOS ACTIVE' : 'NO COMM'}
+                  </span>
+                </div>
               </div>
               <div className="flex items-baseline gap-1 mt-1">
                 <span className="font-t1-unbounded text-t1-subheading font-bold text-t1-pure-white tracking-[2.66px] tabular-nums">
@@ -275,6 +310,18 @@ export default function Dashboard({
                     <Zap className="w-4 h-4 text-data-sun" />
                     Solar Irradiance
                   </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-mono text-[9px] px-1.5 py-0.5 rounded border border-amber-500/40 bg-amber-500/10 text-amber-400 font-bold">
+                      PHYSICAL MODEL
+                    </span>
+                    <button
+                      onClick={() => setActiveExplainerMetric('solarIrradiance')}
+                      title="How is solar irradiance computed?"
+                      className="text-t2-smoke hover:text-indigo-400 p-0.5 transition-colors"
+                    >
+                      <Info className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
                 <div className="flex items-baseline gap-1 mt-1">
                   <span className="font-t1-unbounded text-t1-subheading font-bold text-t1-pure-white tracking-[2.66px] tabular-nums">
@@ -293,6 +340,18 @@ export default function Dashboard({
                     <Battery className="w-4 h-4 text-data-nominal" />
                     Battery Level
                   </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-mono text-[9px] px-1.5 py-0.5 rounded border border-purple-500/40 bg-purple-500/10 text-purple-400 font-bold">
+                      SIMULATED
+                    </span>
+                    <button
+                      onClick={() => setActiveExplainerMetric('batteryLevel')}
+                      title="How is battery state of charge computed?"
+                      className="text-t2-smoke hover:text-indigo-400 p-0.5 transition-colors"
+                    >
+                      <Info className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="font-t1-unbounded text-t1-body font-bold text-t1-pure-white tracking-[2.38px] tabular-nums">
@@ -315,7 +374,19 @@ export default function Dashboard({
                   <Signal className="w-3.5 h-3.5" />
                   Comms Status
                 </span>
-                <span className="font-bold tracking-wider">{currentPoint.commsStatus}</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-mono text-[9px] px-1.5 py-0.5 rounded border border-blue-500/40 bg-blue-500/10 text-blue-300 font-bold">
+                    SIMULATED LINK
+                  </span>
+                  <button
+                    onClick={() => setActiveExplainerMetric('dataRate')}
+                    title="How is comms status computed?"
+                    className="text-t2-smoke hover:text-indigo-400 p-0.5 transition-colors"
+                  >
+                    <Info className="w-3.5 h-3.5" />
+                  </button>
+                  <span className="font-bold tracking-wider">{currentPoint.commsStatus}</span>
+                </div>
               </div>
             )}
           </div>
@@ -323,6 +394,14 @@ export default function Dashboard({
 
         {/* Sidebar Footer */}
         <div className="p-t2-12 border-t border-t2-ash-border bg-black/50 flex items-center justify-between font-t2-nbarchitekt text-t2-caption text-t2-smoke flex-shrink-0">
+          <button
+            onClick={() => setDataMethodsModalOpen(true)}
+            className="flex items-center gap-1.5 hover:text-indigo-400 transition-colors"
+          >
+            <Compass className="w-3 h-3 text-indigo-400" />
+            <span className="underline decoration-dotted underline-offset-2">NASA SPICE / LOLA DEM</span>
+          </button>
+          <span className="text-data-nominal tabular-nums">● {totalPoints} PTS</span>
           <div className="flex items-center gap-1.5">
             <Compass className="w-3 h-3 text-t2-pale-mist" />
             <span>NASA JPL DE421 Ephemeris</span>
@@ -351,14 +430,46 @@ export default function Dashboard({
             </div>
           )}
 
-          {/* Top Left Overlay Badge */}
-          <div className="absolute top-20 left-4 z-10 flex items-center gap-2">
-            <div className="px-t2-12 py-t2-6 rounded-t2-md bg-black/50 backdrop-blur-[4px] border border-t2-ash-border flex items-center gap-2">
+          {/* Top Left Overlay Badge + Vertical Exaggeration & Scientific Tools */}
+          <div className="absolute top-20 left-4 z-10 flex flex-wrap items-center gap-2">
+            <div className="px-t2-12 py-t2-6 rounded-t2-md bg-black/60 backdrop-blur-[4px] border border-t2-ash-border flex items-center gap-2">
               <div className="w-2 h-2 rounded-t2-full bg-data-nominal animate-ping" />
               <span className="font-t2-nbarchitekt text-t2-body-sm text-t2-ghost-white">
                 {selectedSite.label} (3D View)
               </span>
             </div>
+
+            {/* Vertical Exaggeration Segmented Selector */}
+            <div className="px-2 py-1 rounded-t2-md bg-black/70 backdrop-blur-[4px] border border-t2-ash-border flex items-center gap-1.5 font-t2-nbarchitekt text-xs">
+              <span className="text-t2-smoke uppercase tracking-wider text-[10px]">VE:</span>
+              {[
+                { label: '1.0x True', val: 1.0 },
+                { label: '1.5x', val: 1.5 },
+                { label: '2.0x Enh', val: 2.0 },
+                { label: '3.0x', val: 3.0 },
+              ].map((item) => (
+                <button
+                  key={item.val}
+                  onClick={() => setVerticalExaggeration(item.val)}
+                  className={`px-1.5 py-0.5 rounded text-[11px] transition-colors ${
+                    verticalExaggeration === item.val
+                      ? 'bg-t2-dusk-violet text-white font-bold'
+                      : 'text-t2-pale-mist hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Data & Methods Trigger */}
+            <button
+              onClick={() => setDataMethodsModalOpen(true)}
+              className="px-2.5 py-1 rounded-t2-md bg-black/70 backdrop-blur-[4px] border border-t2-ash-border text-xs font-t2-nbarchitekt text-t2-ghost-white hover:text-white hover:bg-white/10 flex items-center gap-1.5 transition-colors"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Data & Methods</span>
+            </button>
           </div>
 
           {/* Top Right Overlay: Sun / Earth / Ticking Mission Clock HUD */}
@@ -435,7 +546,7 @@ export default function Dashboard({
                   unit="°"
                   tick={{ fill: '#808080', fontSize: 10, fontFamily: 'nbarchitekt, Space Grotesk, monospace' }}
                   tickLine={{ stroke: '#4d4d4d' }}
-                  domain={[-8, 8]}
+                  domain={[-8, 12]}
                 />
                 <Tooltip
                   contentStyle={{
@@ -511,6 +622,9 @@ export default function Dashboard({
             </ResponsiveContainer>
           </div>
         </div>
+
+        {/* Permanent NASA / LOLA / SPICE Attribution Footer */}
+        <FooterAttribution />
       </main>
 
       {/* Global FPS Monitor HUD */}

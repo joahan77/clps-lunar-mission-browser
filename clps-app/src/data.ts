@@ -1,11 +1,30 @@
 export interface DataPoint {
   time: string;
+  utc?: string;
   sunElevation: number;
+  sunAzimuth?: number;
   earthElevation: number;
+  earthAzimuth?: number;
   solarIrradiance?: number;
   batteryLevel?: number;
   dataRate?: number;
   commsStatus?: string;
+  sunVisible?: boolean;
+  earthVisible?: boolean;
+  terrainHorizon?: number;
+}
+
+export interface SiteSummary {
+  totalHours: number;
+  sunHours: number;
+  sunPercent: number;
+  commsHours: number;
+  commsUptimePercent: number;
+  avgSolarIrradiance: number;
+  minSunElevation: number;
+  maxSunElevation: number;
+  minEarthElevation: number;
+  maxEarthElevation: number;
 }
 
 export interface LandingSite {
@@ -17,6 +36,7 @@ export interface LandingSite {
   description: string;
   dataFile: string;
   heightmapUrl: string;
+  summary?: SiteSummary;
 }
 
 export const landingSites: LandingSite[] = [

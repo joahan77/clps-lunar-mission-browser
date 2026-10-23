@@ -11,6 +11,8 @@ import BootSequence from '../components/BootSequence';
 import DescentOverlay from '../components/DescentOverlay';
 import DemoMode from '../components/DemoMode';
 import FpsMonitor from '../components/FpsMonitor';
+import FooterAttribution from '../components/FooterAttribution';
+import { BookOpen } from 'lucide-react';
 
 // Separate component for the 3D Moon sphere with texture
 function MoonSphere() {
@@ -86,6 +88,7 @@ export default function OrbitView() {
     reducedMotion,
     setReducedMotion,
     lowQuality,
+    setDataMethodsModalOpen,
   } = useAppStore();
 
   const cameraControlsRef = useRef<CameraControls | null>(null);
@@ -305,12 +308,21 @@ export default function OrbitView() {
         </nav>
 
         {/* Bottom Actions */}
-        <footer className="flex flex-wrap items-center justify-center gap-t2-12 pointer-events-auto mb-t2-6">
+        <footer className="flex flex-wrap items-center justify-center gap-t2-12 pointer-events-auto mb-t2-4">
           <button
             onClick={() => navigate('/compare')}
             className="font-t2-nbarchitekt text-t2-body-sm text-t2-ghost-white border border-t2-ash-border rounded-t2-md px-t2-14 py-t2-6 bg-transparent hover:bg-white/[0.08] hover:border-t2-smoke transition-colors focus:outline-none focus:ring-1 focus:ring-t2-ghost-white"
           >
             [ View Mission Planner Comparison ]
+          </button>
+
+          {/* Data & Methods Trigger */}
+          <button
+            onClick={() => setDataMethodsModalOpen(true)}
+            className="font-t2-nbarchitekt text-t2-body-sm text-t2-ghost-white border border-t2-ash-border rounded-t2-md px-t2-14 py-t2-6 bg-black/40 hover:bg-white/[0.08] hover:border-t2-smoke transition-colors focus:outline-none flex items-center gap-1.5"
+          >
+            <BookOpen className="w-3.5 h-3.5 text-indigo-400" />
+            <span>Data & Methods</span>
           </button>
 
           {/* Illumination Heatmap Toggle */}
@@ -332,6 +344,11 @@ export default function OrbitView() {
             System Styleguide →
           </button>
         </footer>
+
+        {/* Global Footer Attribution Bar */}
+        <div className="w-full pointer-events-auto">
+          <FooterAttribution />
+        </div>
       </div>
 
       {/* FPS & Quality Monitor HUD */}

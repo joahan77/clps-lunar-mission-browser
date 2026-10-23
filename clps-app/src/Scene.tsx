@@ -59,6 +59,10 @@ function getSunColorAndIntensity(elevation: number): { color: THREE.Color; inten
 /** 3D Lunar terrain plane displaced using real heightmap */
 function LunarSurface({ heightmapUrl }: { heightmapUrl?: string }) {
   const heightmap = useTexture(heightmapUrl || '/heightmaps/shackleton_heightmap.png');
+  const verticalExaggeration = useAppStore((s) => s.verticalExaggeration);
+
+  // Base physical scale modulated by user-selected vertical exaggeration
+  const effectiveDisplacement = 4.5 * (verticalExaggeration || 1.5);
 
   return (
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow castShadow>
@@ -68,7 +72,7 @@ function LunarSurface({ heightmapUrl }: { heightmapUrl?: string }) {
         roughness={0.88}
         metalness={0.06}
         displacementMap={heightmap}
-        displacementScale={8.0}
+        displacementScale={effectiveDisplacement}
         flatShading={true}
       />
     </mesh>
