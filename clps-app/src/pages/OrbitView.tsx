@@ -115,6 +115,85 @@ function MoonGroup({
   );
 }
 
+// Cinematic Slow Zoom: keeps the Moon zoomed out first, then glides in very slowly to standard distance
+function CinematicSlowZoom({
+  cameraControlsRef,
+  isBooting,
+  reducedMotion,
+  hasCompleted,
+  onComplete,
+  userInteractedRef,
+}: {
+  cameraControlsRef: React.RefObject<CameraControls | null>;
+  isBooting: boolean;
+  reducedMotion: boolean;
+  hasCompleted: boolean;
+  onComplete: () => void;
+  userInteractedRef: React.MutableRefObject<boolean>;
+}) {
+  const START_DISTANCE = 65;
+  const TARGET_DISTANCE = 35;
+  const HOLD_DURATION = 1.4; // hold zoomed out for 1.4s so scale registers
+  const ZOOM_DURATION = 7.0; // slow, majestic 7.0s glide into standard orbit
+
+  const initializedRef = useRef(false);
+  const holdTimerRef = useRef(0);
+  const progressRef = useRef(0);
+  const isFinishedRef = useRef(hasCompleted || reducedMotion);
+
+  useFrame((_, delta) => {
+    const controls = cameraControlsRef.current;
+    if (!controls || isFinishedRef.current) return;
+
+    // First frame initialization
+    if (!initializedRef.current) {
+      initializedRef.current = true;
+      if (hasCompleted || reducedMotion) {
+        controls.setLookAt(0, 0, TARGET_DISTANCE, 0, 0, 0, false);
+        isFinishedRef.current = true;
+        return;
+      }
+      // Start zoomed out
+      controls.setLookAt(0, 0, START_DISTANCE, 0, 0, 0, false);
+    }
+
+    // If user grabbed the camera, cancel auto-zoom immediately
+    if (userInteractedRef.current) {
+      isFinishedRef.current = true;
+      onComplete();
+      return;
+    }
+
+    // Keep zoomed out while boot sequence is playing
+    if (isBooting) {
+      holdTimerRef.current = 0;
+      return;
+    }
+
+    // Hold zoomed out first
+    if (holdTimerRef.current < HOLD_DURATION) {
+      holdTimerRef.current += delta;
+      return;
+    }
+
+    // Zoom in very slowly
+    progressRef.current += delta / ZOOM_DURATION;
+    const t = Math.min(1, progressRef.current);
+    // Smooth cubic ease-in-out curve
+    const eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    const currentDist = START_DISTANCE + (TARGET_DISTANCE - START_DISTANCE) * eased;
+
+    controls.dollyTo(currentDist, false);
+
+    if (t >= 1) {
+      isFinishedRef.current = true;
+      onComplete();
+    }
+  });
+
+  return null;
+}
+
 export default function OrbitView() {
   const navigate = useNavigate();
   const { SITES, setSelectedSite } = useMission();
@@ -127,10 +206,13 @@ export default function OrbitView() {
     setReducedMotion,
     lowQuality,
     bootComplete,
+    hasCompletedOpeningZoom,
+    setHasCompletedOpeningZoom,
     setViewReady,
   } = useAppStore();
 
   const cameraControlsRef = useRef<CameraControls | null>(null);
+  const userInteractedRef = useRef(false);
 
   const [hoveredSite, setHoveredSite] = useState<any | null>(null);
   const [targetSite, setTargetSite] = useState<any | null>(null);
@@ -166,8 +248,9 @@ export default function OrbitView() {
     return () => clearTimeout(timer);
   }, [setOverlayOpacity]);
 
-  // Cancel descent if user grabs or controls camera
+  // Cancel slow zoom or descent if user grabs or controls camera
   const handleControlStart = () => {
+    userInteractedRef.current = true;
     if (phase === 'descending') {
       setPhase('idle');
       setTargetSite(null);
@@ -238,7 +321,11 @@ export default function OrbitView() {
       {/* ── 3D Moon Viewport via Persistent Canvas ── */}
       <View className="absolute inset-0 z-0 pointer-events-auto">
         <Suspense fallback={null}>
-          <PerspectiveCamera makeDefault position={[0, 0, 35]} fov={45} />
+          <PerspectiveCamera
+            makeDefault
+            position={[0, 0, hasCompletedOpeningZoom || reducedMotion ? 35 : 65]}
+            fov={45}
+          />
           {/* Real Sun Directional Light for Today's UTC Date */}
           <directionalLight
             position={[
@@ -287,6 +374,16 @@ export default function OrbitView() {
             minPolarAngle={Math.PI / 2 - 0.35}
             maxPolarAngle={Math.PI / 2 + 0.35}
             onStart={handleControlStart}
+          />
+
+          {/* Cinematic Opening: Keep Moon zoomed out first and zoom in very slowly */}
+          <CinematicSlowZoom
+            cameraControlsRef={cameraControlsRef}
+            isBooting={showBoot}
+            reducedMotion={reducedMotion}
+            hasCompleted={hasCompletedOpeningZoom}
+            onComplete={() => setHasCompletedOpeningZoom(true)}
+            userInteractedRef={userInteractedRef}
           />
         </Suspense>
       </View>

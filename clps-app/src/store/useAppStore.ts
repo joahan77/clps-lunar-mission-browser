@@ -47,9 +47,11 @@ interface AppState {
   reducedMotion: boolean;
   setReducedMotion: (v: boolean) => void;
 
-  // Boot
+  // Boot & Opening
   bootComplete: boolean;
   setBootComplete: (v: boolean) => void;
+  hasCompletedOpeningZoom: boolean;
+  setHasCompletedOpeningZoom: (v: boolean) => void;
 
   // Terrain Vertical Exaggeration (1.0x Realistic, 1.5x, 2.0x Enhanced, 3.0x Dramatic)
   verticalExaggeration: number;
@@ -106,6 +108,8 @@ export const useAppStore = create<AppState>((set) => ({
 
   bootComplete: false,
   setBootComplete: (v) => set({ bootComplete: v }),
+  hasCompletedOpeningZoom: false,
+  setHasCompletedOpeningZoom: (v) => set({ hasCompletedOpeningZoom: v }),
 
   verticalExaggeration: 1.5,
   setVerticalExaggeration: (v) => set({ verticalExaggeration: v }),
