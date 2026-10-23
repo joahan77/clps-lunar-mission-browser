@@ -114,6 +114,7 @@ export default function OrbitView() {
     reducedMotion,
     setReducedMotion,
     lowQuality,
+    bootComplete,
   } = useAppStore();
 
   const cameraControlsRef = useRef<CameraControls | null>(null);
@@ -121,7 +122,7 @@ export default function OrbitView() {
   const [hoveredSite, setHoveredSite] = useState<any | null>(null);
   const [targetSite, setTargetSite] = useState<any | null>(null);
   const [showHeatmap, setShowHeatmap] = useState(false);
-  const [showBoot, setShowBoot] = useState(true);
+  const [showBoot, setShowBoot] = useState(!bootComplete && !reducedMotion);
 
   // Real astronomical lighting for today's UTC date
   const lighting = useMemo(() => getLunarLightingForDate(new Date()), []);

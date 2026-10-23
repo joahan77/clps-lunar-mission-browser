@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { Loader2 } from 'lucide-react';
 
@@ -8,13 +8,19 @@ interface BootSequenceProps {
 
 export default function BootSequence({ onComplete }: BootSequenceProps) {
   const [progress, setProgress] = useState(0);
-  const [stageText, setStageText] = useState('CALIBRATING SENSORS');
+  const [stageText, setStageText] = useState('CALIBRATING SENSORS & IMU TELEMETRY');
   const [fadeOut, setFadeOut] = useState(false);
   const { bootComplete, setBootComplete, reducedMotion } = useAppStore();
 
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
+
+  const setBootCompleteRef = useRef(setBootComplete);
+  setBootCompleteRef.current = setBootComplete;
+
   useEffect(() => {
     if (bootComplete || reducedMotion) {
-      onComplete();
+      onCompleteRef.current();
       return;
     }
 
@@ -22,11 +28,12 @@ export default function BootSequence({ onComplete }: BootSequenceProps) {
     const DURATION_MS = 4200;
     const startTime = Date.now();
 
-    const handleKeyDown = () => {
-      setBootComplete(true);
-      onComplete();
+    const handleSkip = () => {
+      setBootCompleteRef.current(true);
+      onCompleteRef.current();
     };
-    window.addEventListener('keydown', handleKeyDown);
+
+    window.addEventListener('keydown', handleSkip);
 
     const interval = setInterval(() => {
       const elapsed = Date.now() - startTime;
@@ -40,8 +47,8 @@ export default function BootSequence({ onComplete }: BootSequenceProps) {
         setTimeout(() => {
           setFadeOut(true);
           setTimeout(() => {
-            setBootComplete(true);
-            onComplete();
+            setBootCompleteRef.current(true);
+            onCompleteRef.current();
           }, 500);
         }, 300);
       } else if (pct > 75) {
@@ -57,9 +64,9 @@ export default function BootSequence({ onComplete }: BootSequenceProps) {
 
     return () => {
       clearInterval(interval);
-      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keydown', handleSkip);
     };
-  }, [bootComplete, reducedMotion, onComplete, setBootComplete]);
+  }, []); // Run once on mount! Never restart on parent re-renders
 
   if (bootComplete || reducedMotion) return null;
 
