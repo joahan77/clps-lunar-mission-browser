@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useAppStore } from '../store/useAppStore';
-import { ASSET_MANIFEST, preloadAllAssets, type PreloadProgressEvent } from '../utils/assetPreloader';
+import { ASSET_MANIFEST, preloadAllAssets } from '../utils/assetPreloader';
+import { AlertTriangle } from 'lucide-react';
 
 interface BootSequenceProps {
   onComplete: () => void;
@@ -85,14 +86,198 @@ function ScrambleLogLine({ entry }: { entry: LogEntry }) {
   );
 }
 
+/** Wireframe Moon SVG Sphere */
+function WireframeMoonSvg({
+  ringDashOffset = 0,
+  sweepActive = false,
+  isSpinning = false,
+}: {
+  ringDashOffset?: number;
+  sweepActive?: boolean;
+  isSpinning?: boolean;
+}) {
+  return (
+    <svg className="w-full h-full" viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <clipPath id="moon-sphere-clip">
+          <circle cx="120" cy="120" r="92" />
+        </clipPath>
+        <linearGradient id="sunlight-sweep-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="transparent" />
+          <stop offset="35%" stopColor="rgba(245, 158, 11, 0.45)" />
+          <stop offset="50%" stopColor="rgba(255, 255, 255, 0.95)" />
+          <stop offset="65%" stopColor="rgba(251, 191, 36, 0.5)" />
+          <stop offset="100%" stopColor="transparent" />
+        </linearGradient>
+      </defs>
+
+      {/* Sphere Baseline Rim */}
+      <circle
+        cx="120"
+        cy="120"
+        r="92"
+        stroke="rgba(255, 255, 255, 0.22)"
+        strokeWidth="1.2"
+        fill="#000000"
+      />
+
+      {/* Group clipped inside lunar sphere */}
+      <g clipPath="url(#moon-sphere-clip)">
+        <g className={isSpinning ? 'animate-wireframe-spin origin-[120px_120px]' : ''}>
+          {/* Concentric Latitude Circles */}
+          <ellipse
+            cx="120"
+            cy="120"
+            rx="92"
+            ry="24"
+            stroke="rgba(255, 255, 255, 0.35)"
+            strokeWidth="0.8"
+            strokeDasharray="600"
+            strokeDashoffset={ringDashOffset}
+          />
+          <ellipse
+            cx="120"
+            cy="80"
+            rx="82"
+            ry="20"
+            stroke="rgba(255, 255, 255, 0.28)"
+            strokeWidth="0.8"
+            strokeDasharray="600"
+            strokeDashoffset={ringDashOffset}
+          />
+          <ellipse
+            cx="120"
+            cy="50"
+            rx="62"
+            ry="15"
+            stroke="rgba(255, 255, 255, 0.24)"
+            strokeWidth="0.8"
+            strokeDasharray="600"
+            strokeDashoffset={ringDashOffset}
+          />
+          <ellipse
+            cx="120"
+            cy="160"
+            rx="82"
+            ry="20"
+            stroke="rgba(255, 255, 255, 0.28)"
+            strokeWidth="0.8"
+            strokeDasharray="600"
+            strokeDashoffset={ringDashOffset}
+          />
+          <ellipse
+            cx="120"
+            cy="190"
+            rx="62"
+            ry="15"
+            stroke="rgba(255, 255, 255, 0.24)"
+            strokeWidth="0.8"
+            strokeDasharray="600"
+            strokeDashoffset={ringDashOffset}
+          />
+
+          {/* Meridian Longitude Arcs */}
+          <line
+            x1="120"
+            y1="28"
+            x2="120"
+            y2="212"
+            stroke="rgba(255, 255, 255, 0.4)"
+            strokeWidth="0.8"
+            strokeDasharray="600"
+            strokeDashoffset={ringDashOffset}
+          />
+          <ellipse
+            cx="120"
+            cy="120"
+            rx="46"
+            ry="92"
+            stroke="rgba(255, 255, 255, 0.28)"
+            strokeWidth="0.8"
+            strokeDasharray="600"
+            strokeDashoffset={ringDashOffset}
+          />
+          <ellipse
+            cx="120"
+            cy="120"
+            rx="76"
+            ry="92"
+            stroke="rgba(255, 255, 255, 0.24)"
+            strokeWidth="0.8"
+            strokeDasharray="600"
+            strokeDashoffset={ringDashOffset}
+          />
+        </g>
+
+        {/* South Pole Target Marker (Pulsing ring) */}
+        <circle
+          cx="120"
+          cy="204"
+          r="4"
+          stroke="#c1ff00"
+          strokeWidth="1.2"
+          fill="none"
+          className="animate-pulse"
+        />
+        <circle cx="120" cy="204" r="1.5" fill="#c1ff00" />
+
+        {/* 100% Sunlight Sweep Across Wireframe */}
+        {sweepActive && (
+          <rect
+            x="-240"
+            y="0"
+            width="240"
+            height="240"
+            fill="url(#sunlight-sweep-grad)"
+            className="animate-[sweep_0.65s_cubic-bezier(0.16,1,0.3,1)_forwards]"
+          />
+        )}
+      </g>
+
+      {/* Rotating Orbit Ring */}
+      <ellipse
+        cx="120"
+        cy="120"
+        rx="112"
+        ry="44"
+        transform="rotate(-28 120 120)"
+        stroke="rgba(255, 255, 255, 0.45)"
+        strokeWidth="1"
+        strokeDasharray="4 6"
+        className="animate-[spin_18s_linear_infinite] origin-[120px_120px]"
+      />
+
+      {/* Center Target Crosshair */}
+      <line x1="106" y1="120" x2="134" y2="120" stroke="rgba(255, 255, 255, 0.7)" strokeWidth="0.8" />
+      <line x1="120" y1="106" x2="120" y2="134" stroke="rgba(255, 255, 255, 0.7)" strokeWidth="0.8" />
+      <circle cx="120" cy="120" r="1.5" fill="#ffffff" />
+    </svg>
+  );
+}
+
 export default function BootSequence({ onComplete }: BootSequenceProps) {
-  const { bootComplete, setBootComplete, reducedMotion } = useAppStore();
+  const {
+    bootComplete,
+    setBootComplete,
+    gatePassed,
+    setGatePassed,
+    pendingTourFromGate,
+    setPendingTourFromGate,
+    reducedMotion,
+  } = useAppStore();
+
+  const [stage, setStage] = useState<'gate' | 'loading' | 'timeout_error'>(() => {
+    if (gatePassed) return 'loading';
+    return 'gate';
+  });
+
   const [progress, setProgress] = useState(0);
   const [logEntries, setLogEntries] = useState<LogEntry[]>([]);
   const [sweepActive, setSweepActive] = useState(false);
   const [fadeOut, setFadeOut] = useState(false);
   const [utcTime, setUtcTime] = useState(() => new Date().toISOString().substring(11, 19) + ' UTC');
 
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
   const setBootCompleteRef = useRef(setBootComplete);
@@ -106,36 +291,77 @@ export default function BootSequence({ onComplete }: BootSequenceProps) {
     return () => clearInterval(timer);
   }, []);
 
-  // Instant skip on user input
-  const handleSkip = useRef(() => {
-    setBootCompleteRef.current(true);
-    onCompleteRef.current();
-  });
-
+  // Auto-focus the "BEGIN DESCENT" button when on the gate
   useEffect(() => {
-    if (bootComplete || reducedMotion) {
-      onCompleteRef.current();
+    if (stage === 'gate') {
+      const t = setTimeout(() => {
+        buttonRef.current?.focus();
+      }, 50);
+      return () => clearTimeout(t);
+    }
+  }, [stage]);
+
+  // Handle Begin Descent action (starts loading sequence)
+  const handleBeginDescent = () => {
+    if (stage !== 'gate') return;
+
+    if (reducedMotion) {
+      setFadeOut(true);
+      setTimeout(() => {
+        setGatePassed(true);
+        setBootCompleteRef.current(true);
+        onCompleteRef.current();
+        if (pendingTourFromGate) {
+          useAppStore.getState().setDemoMode(true);
+          setPendingTourFromGate(false);
+        }
+      }, 250);
       return;
     }
 
+    setGatePassed(true);
+    setStage('loading');
+  };
+
+  // Keyboard navigation & Shortcuts on the gate and loading stages
+  useEffect(() => {
+    if (bootComplete) return;
+
     const onKeyDown = (e: KeyboardEvent) => {
-      // Don't intercept modifier shortcuts like Cmd+R
       if (e.metaKey || e.ctrlKey || e.altKey) return;
-      handleSkip.current();
+
+      if (stage === 'gate') {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleBeginDescent();
+        } else if (e.key === 'd' || e.key === 'D') {
+          e.preventDefault();
+          setPendingTourFromGate(true);
+          handleBeginDescent();
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          handleBeginDescent();
+        }
+      } else if (stage === 'loading') {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          // Instant skip during loading
+          setBootCompleteRef.current(true);
+          onCompleteRef.current();
+        }
+      }
     };
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [bootComplete, reducedMotion]);
+  }, [stage, bootComplete, reducedMotion]);
 
-  // Real asset loading orchestration over 4.8s duration
+  // Orchestrate the real asset loading sequence only when stage === 'loading'
   useEffect(() => {
-    if (bootComplete || reducedMotion) return;
+    if (stage !== 'loading' || bootComplete) return;
 
     let isMounted = true;
     const timeouts: ReturnType<typeof setTimeout>[] = [];
-
-    // Helper to format current UTC timestamp
     const nowTime = () => new Date().toISOString().substring(11, 19);
 
     // Initial system boot log
@@ -150,7 +376,15 @@ export default function BootSequence({ onComplete }: BootSequenceProps) {
       },
     ]);
 
-    // Schedule real asset loading sequentially across the 4.2s window
+    // 15-second watchdog timer for network timeout / stall
+    const watchdogTimer = setTimeout(() => {
+      if (isMounted) {
+        setStage('timeout_error');
+      }
+    }, 15000);
+    timeouts.push(watchdogTimer);
+
+    // Schedule real asset loading sequentially across a 4.2s window
     const manifest = ASSET_MANIFEST;
     const stepDuration = 440; // ~440ms per real asset load
 
@@ -158,7 +392,6 @@ export default function BootSequence({ onComplete }: BootSequenceProps) {
       const t = setTimeout(async () => {
         if (!isMounted) return;
 
-        // Perform real fetch / image cache
         try {
           if (asset.type === 'json') {
             const res = await fetch(asset.url);
@@ -168,7 +401,7 @@ export default function BootSequence({ onComplete }: BootSequenceProps) {
             img.src = asset.url;
           }
         } catch {
-          // Non-blocking
+          // Handled gracefully
         }
 
         if (!isMounted) return;
@@ -178,7 +411,7 @@ export default function BootSequence({ onComplete }: BootSequenceProps) {
         setProgress(currentPct);
 
         setLogEntries((prev) => [
-          ...prev.slice(-6), // Keep most recent 7 lines
+          ...prev.slice(-6),
           {
             id: asset.id,
             timestamp: nowTime(),
@@ -193,11 +426,12 @@ export default function BootSequence({ onComplete }: BootSequenceProps) {
       timeouts.push(t);
     });
 
-    // Final step: WebGL Shader pipeline & texture mipmaps (at ~3.9s)
+    // Final step: WebGL Shader pipeline & texture mipmaps
     const finalAssetTime = 350 + manifest.length * stepDuration;
     const tFinal = setTimeout(() => {
       if (!isMounted) return;
 
+      clearTimeout(watchdogTimer);
       setProgress(100);
       setLogEntries((prev) => [
         ...prev.slice(-6),
@@ -223,6 +457,12 @@ export default function BootSequence({ onComplete }: BootSequenceProps) {
           if (!isMounted) return;
           setBootCompleteRef.current(true);
           onCompleteRef.current();
+
+          // Launch queued demo tour if triggered on gate
+          if (useAppStore.getState().pendingTourFromGate) {
+            useAppStore.getState().setDemoMode(true);
+            useAppStore.getState().setPendingTourFromGate(false);
+          }
         }, 550);
         timeouts.push(tDone);
       }, 650);
@@ -234,17 +474,15 @@ export default function BootSequence({ onComplete }: BootSequenceProps) {
       isMounted = false;
       timeouts.forEach(clearTimeout);
     };
-  }, [bootComplete, reducedMotion]);
+  }, [stage, bootComplete]);
 
-  if (bootComplete || reducedMotion) return null;
+  if (bootComplete) return null;
 
-  // Calculate SVG strokeDashoffset based on real progress
   const ringDashOffset = 600 - (600 * progress) / 100;
 
   return (
     <div
-      onClick={() => handleSkip.current()}
-      className={`fixed inset-0 z-50 bg-[#000000] text-t2-ghost-white flex flex-col justify-between p-6 sm:p-10 select-none cursor-pointer transition-opacity duration-500 ${
+      className={`fixed inset-0 z-50 bg-[#000000] text-t2-ghost-white flex flex-col justify-between p-6 sm:p-10 select-none transition-opacity duration-500 ${
         fadeOut ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
     >
@@ -284,231 +522,143 @@ export default function BootSequence({ onComplete }: BootSequenceProps) {
         </div>
       </header>
 
-      {/* ── Center Stage: Wireframe Moon + Live Log Stream ── */}
-      <main className="relative z-10 my-auto w-full max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
-        {/* Left: Wireframe Moon with Lat/Lon Circles & Orbit Ring */}
-        <div className="md:col-span-5 flex flex-col items-center justify-center">
-          <div className="relative w-64 h-64 sm:w-72 sm:h-72 flex items-center justify-center">
-            {/* SVG Wireframe Sphere */}
-            <svg
-              className="w-full h-full"
-              viewBox="0 0 240 240"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
+      {/* ── Center Stage ── */}
+      <main className="relative z-10 my-auto w-full max-w-5xl mx-auto flex items-center justify-center">
+        {/* 1. START GATE SCREEN */}
+        {stage === 'gate' && (
+          <div className="flex flex-col items-center justify-center text-center space-y-7 max-w-xl mx-auto">
+            {/* Wireframe Moon with subtle slow rotation */}
+            <div className="relative w-56 h-56 sm:w-64 sm:h-64 flex items-center justify-center">
+              <WireframeMoonSvg
+                ringDashOffset={0}
+                sweepActive={false}
+                isSpinning={!reducedMotion}
+              />
+            </div>
+
+            {/* Thesis Line & Quiet Stat Strip */}
+            <div className="space-y-2">
+              <h1 className="font-t1-unbounded text-sm sm:text-base font-bold text-t1-pure-white tracking-[2.38px] uppercase leading-relaxed max-w-md mx-auto">
+                Where on the Moon can a lander survive the night?
+              </h1>
+              <p className="font-t2-nbarchitekt text-xs text-t2-smoke tracking-wider">
+                8 CANDIDATE SITES • 85.4°S – 89.9°S • 720H UTC MISSION WINDOW
+              </p>
+            </div>
+
+            {/* Active Theory Ghost Button & Keyboard Hint */}
+            <div className="flex flex-col items-center space-y-2.5 pt-2">
+              <button
+                ref={buttonRef}
+                onClick={handleBeginDescent}
+                className={`font-t2-nbarchitekt text-xs sm:text-sm font-bold tracking-[2px] uppercase px-8 py-3.5 rounded-t2-md border border-t2-ash-border bg-black/60 hover:bg-white/[0.08] hover:border-t2-smoke text-t2-ghost-white transition-all focus:outline-none focus:ring-1 focus:ring-t2-ghost-white select-none ${
+                  reducedMotion ? '' : 'animate-gate-border-pulse'
+                }`}
+              >
+                BEGIN DESCENT
+              </button>
+              <span className="font-mono text-[10px] text-t2-smoke/70 tracking-wider">
+                Press Enter to begin
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* 2. LOADING SEQUENCE (Real Asset Streaming) */}
+        {stage === 'loading' && (
+          <div className="w-full grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
+            {/* Left: Wireframe Moon with Drawing Lat/Lon Circles */}
+            <div className="md:col-span-5 flex flex-col items-center justify-center">
+              <div className="relative w-64 h-64 sm:w-72 sm:h-72 flex items-center justify-center">
+                <WireframeMoonSvg
+                  ringDashOffset={ringDashOffset}
+                  sweepActive={sweepActive}
+                  isSpinning={false}
+                />
+              </div>
+
+              {/* Real Loading Progress % */}
+              <div className="mt-4 text-center">
+                <div className="font-t1-unbounded text-2xl sm:text-3xl font-bold tracking-wider text-t1-pure-white tabular-nums">
+                  {progress}
+                  <span className="text-sm font-normal text-t2-smoke ml-0.5">%</span>
+                </div>
+                <div className="text-[10px] font-mono tracking-widest text-t2-smoke uppercase mt-1">
+                  NASA TELEMETRY STREAM
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Live Log Stream with Scramble Reveals */}
+            <div className="md:col-span-7 bg-[#050508] border border-t2-ash-border rounded-t2-xl p-4 sm:p-5 h-72 sm:h-80 flex flex-col justify-between shadow-2xl">
+              <div className="flex items-center justify-between border-b border-t2-ash-border/40 pb-2 text-[10px] font-mono tracking-wider text-t2-smoke uppercase">
+                <span>TERMINAL • TELEMETRY_STREAM_DE421</span>
+                <span>STATUS: STREAMING</span>
+              </div>
+
+              {/* Streaming Log Lines */}
+              <div className="flex-1 py-3 flex flex-col justify-end space-y-2 overflow-hidden">
+                {logEntries.map((entry) => (
+                  <ScrambleLogLine key={entry.id} entry={entry} />
+                ))}
+              </div>
+
+              {/* Sub-bar */}
+              <div className="pt-2 border-t border-t2-ash-border/30 flex items-center justify-between text-[10px] font-mono text-t2-smoke">
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-data-nominal animate-pulse" />
+                  <span>DE421 NAIF SPICE KERNEL VERIFIED</span>
+                </div>
+                <span className="text-t2-smoke/80 tabular-nums">720H / 1H STEPS</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 3. 15-SECOND TIMEOUT FALLBACK SCREEN */}
+        {stage === 'timeout_error' && (
+          <div className="flex flex-col items-center justify-center text-center space-y-4 max-w-md mx-auto p-6 bg-[#050508] border border-red-500/30 rounded-t2-xl">
+            <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/40 flex items-center justify-center text-red-400">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+            <h3 className="font-t1-unbounded text-sm font-bold uppercase tracking-wider text-white">
+              MISSION DATA PIPELINE TIMEOUT
+            </h3>
+            <p className="font-t2-nbarchitekt text-xs text-t2-pale-mist leading-relaxed">
+              Telemetry response exceeded 15.0s threshold. NASA JPL DE421 ephemeris and LOLA DEM tiles could not be verified.
+            </p>
+            <button
+              onClick={() => {
+                setProgress(0);
+                setLogEntries([]);
+                setStage('loading');
+              }}
+              className="font-t2-nbarchitekt text-xs font-bold tracking-[2px] uppercase px-6 py-2.5 rounded-t2-md border border-t2-ash-border bg-black/60 hover:bg-white/[0.08] hover:border-white text-white transition-all focus:outline-none focus:ring-1 focus:ring-white select-none"
             >
-              <defs>
-                <clipPath id="moon-sphere-clip">
-                  <circle cx="120" cy="120" r="92" />
-                </clipPath>
-                {/* Sunlight Dawn Sweep Gradient */}
-                <linearGradient id="sunlight-sweep-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="transparent" />
-                  <stop offset="35%" stopColor="rgba(245, 158, 11, 0.45)" />
-                  <stop offset="50%" stopColor="rgba(255, 255, 255, 0.95)" />
-                  <stop offset="65%" stopColor="rgba(251, 191, 36, 0.5)" />
-                  <stop offset="100%" stopColor="transparent" />
-                </linearGradient>
-              </defs>
-
-              {/* Sphere Background Glow & Baseline Rim */}
-              <circle
-                cx="120"
-                cy="120"
-                r="92"
-                stroke="rgba(255, 255, 255, 0.2)"
-                strokeWidth="1.2"
-                fill="#000000"
-              />
-
-              {/* Group clipped inside lunar sphere */}
-              <g clipPath="url(#moon-sphere-clip)">
-                {/* Concentric Latitude Circles (Polar perspective) */}
-                <ellipse
-                  cx="120"
-                  cy="120"
-                  rx="92"
-                  ry="24"
-                  stroke="rgba(255, 255, 255, 0.35)"
-                  strokeWidth="0.8"
-                  strokeDasharray="600"
-                  strokeDashoffset={ringDashOffset}
-                />
-                <ellipse
-                  cx="120"
-                  cy="80"
-                  rx="82"
-                  ry="20"
-                  stroke="rgba(255, 255, 255, 0.28)"
-                  strokeWidth="0.8"
-                  strokeDasharray="600"
-                  strokeDashoffset={ringDashOffset}
-                />
-                <ellipse
-                  cx="120"
-                  cy="50"
-                  rx="62"
-                  ry="15"
-                  stroke="rgba(255, 255, 255, 0.24)"
-                  strokeWidth="0.8"
-                  strokeDasharray="600"
-                  strokeDashoffset={ringDashOffset}
-                />
-                <ellipse
-                  cx="120"
-                  cy="160"
-                  rx="82"
-                  ry="20"
-                  stroke="rgba(255, 255, 255, 0.28)"
-                  strokeWidth="0.8"
-                  strokeDasharray="600"
-                  strokeDashoffset={ringDashOffset}
-                />
-                <ellipse
-                  cx="120"
-                  cy="190"
-                  rx="62"
-                  ry="15"
-                  stroke="rgba(255, 255, 255, 0.24)"
-                  strokeWidth="0.8"
-                  strokeDasharray="600"
-                  strokeDashoffset={ringDashOffset}
-                />
-
-                {/* Meridian Longitude Arcs */}
-                <line
-                  x1="120"
-                  y1="28"
-                  x2="120"
-                  y2="212"
-                  stroke="rgba(255, 255, 255, 0.4)"
-                  strokeWidth="0.8"
-                  strokeDasharray="600"
-                  strokeDashoffset={ringDashOffset}
-                />
-                <ellipse
-                  cx="120"
-                  cy="120"
-                  rx="46"
-                  ry="92"
-                  stroke="rgba(255, 255, 255, 0.28)"
-                  strokeWidth="0.8"
-                  strokeDasharray="600"
-                  strokeDashoffset={ringDashOffset}
-                />
-                <ellipse
-                  cx="120"
-                  cy="120"
-                  rx="76"
-                  ry="92"
-                  stroke="rgba(255, 255, 255, 0.24)"
-                  strokeWidth="0.8"
-                  strokeDasharray="600"
-                  strokeDashoffset={ringDashOffset}
-                />
-
-                {/* South Pole Target Marker (Pulsing ring) */}
-                <circle
-                  cx="120"
-                  cy="204"
-                  r="4"
-                  stroke="#34d399"
-                  strokeWidth="1.2"
-                  fill="none"
-                  className="animate-pulse"
-                />
-                <circle cx="120" cy="204" r="1.5" fill="#34d399" />
-
-                {/* 100% Sunlight Sweep Across the Wireframe */}
-                {sweepActive && (
-                  <rect
-                    x="-240"
-                    y="0"
-                    width="240"
-                    height="240"
-                    fill="url(#sunlight-sweep-grad)"
-                    className="animate-[sweep_0.65s_cubic-bezier(0.16,1,0.3,1)_forwards]"
-                  />
-                )}
-              </g>
-
-              {/* Rotating Orbit Ring (Inclined polar trajectory) */}
-              <ellipse
-                cx="120"
-                cy="120"
-                rx="112"
-                ry="44"
-                transform="rotate(-28 120 120)"
-                stroke="rgba(255, 255, 255, 0.45)"
-                strokeWidth="1"
-                strokeDasharray="4 6"
-                className="animate-[spin_14s_linear_infinite] origin-[120px_120px]"
-              />
-
-              {/* Thin Center Target Crosshair */}
-              <line x1="106" y1="120" x2="134" y2="120" stroke="rgba(255, 255, 255, 0.7)" strokeWidth="0.8" />
-              <line x1="120" y1="106" x2="120" y2="134" stroke="rgba(255, 255, 255, 0.7)" strokeWidth="0.8" />
-              <circle cx="120" cy="120" r="1.5" fill="#ffffff" />
-            </svg>
+              RETRY CONNECTION
+            </button>
           </div>
-
-          <div className="mt-3 font-mono text-[10px] text-t2-smoke tracking-widest uppercase flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-data-nominal animate-ping" />
-            <span>POLAR TARGET: 89.9°S 0.0°E (SHACKLETON)</span>
-          </div>
-        </div>
-
-        {/* Right: Monospace Real-Asset Streaming Log & Large Percentage */}
-        <div className="md:col-span-7 flex flex-col justify-between h-72 sm:h-80 border-t md:border-t-0 md:border-l border-t2-ash-border/40 pt-4 md:pt-0 md:pl-8">
-          {/* Top of log container: Real Loading Stream */}
-          <div className="space-y-1.5 overflow-hidden font-mono flex-1">
-            <div className="text-[10px] text-t2-smoke uppercase tracking-wider mb-2 flex items-center justify-between border-b border-t2-ash-border/30 pb-1">
-              <span>REAL TELEMETRY INGESTION STREAM</span>
-              <span className="text-data-nominal-text tabular-nums">{logEntries.length}/8 LOADED</span>
-            </div>
-
-            <div className="space-y-1">
-              {logEntries.map((entry) => (
-                <ScrambleLogLine key={entry.id} entry={entry} />
-              ))}
-            </div>
-          </div>
-
-          {/* Bottom of log container: Large Unbounded Percentage & Progress Bar */}
-          <div className="pt-4 border-t border-t2-ash-border/40 mt-auto">
-            <div className="flex items-baseline justify-between mb-2">
-              <div className="font-t1-unbounded text-5xl sm:text-6xl font-light text-t1-pure-white tabular-nums tracking-tight">
-                {progress}
-                <span className="text-2xl sm:text-3xl font-light text-t2-smoke ml-1">%</span>
-              </div>
-              <div className="text-right">
-                <div className="text-xs font-mono uppercase tracking-widest text-data-nominal-text font-semibold">
-                  {progress === 100 ? 'ORBITAL INSERTION CONFIRMED' : 'DOWNLINK ACTIVE'}
-                </div>
-                <div className="text-[10px] font-mono text-t2-smoke tracking-wider">
-                  {progress === 100 ? 'INITIALIZING INTERACTIVE VIEWPORT' : 'SYNCHRONIZING WITH NAIF SPICE'}
-                </div>
-              </div>
-            </div>
-
-            {/* Hairline Progress Bar */}
-            <div className="w-full h-1 bg-black/60 rounded-full border border-t2-ash-border/50 overflow-hidden">
-              <div
-                className="h-full bg-t1-pure-white transition-all duration-150 ease-out"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-          </div>
-        </div>
+        )}
       </main>
 
-      {/* ── Bottom Footer Strip ── */}
-      <footer className="relative z-10 flex flex-col sm:flex-row items-center justify-between text-[11px] font-mono text-t2-smoke/80 tracking-wider gap-2">
-        <div>
-          SOURCES: NASA JPL NAIF SPICE DE421 • LRO LOLA PDS • USGS ASTROGEOLOGY
+      {/* ── Bottom HUD Footer ── */}
+      <footer className="relative z-10 flex items-center justify-between text-[11px] font-mono text-t2-smoke border-t border-t2-ash-border/30 pt-3">
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-[#c1ff00] animate-pulse" />
+          <span>SPICE KERNELS: DE421 • MOON_PA_DE421 • LOLA 5M</span>
         </div>
-        <div className="text-t2-ash-border hover:text-white transition-colors cursor-pointer text-[10px] uppercase tracking-widest">
-          [PRESS ANY KEY OR CLICK TO ENTER]
-        </div>
+
+        {stage === 'loading' && (
+          <button
+            onClick={() => {
+              setBootCompleteRef.current(true);
+              onCompleteRef.current();
+            }}
+            className="hover:text-t2-ghost-white transition-colors cursor-pointer"
+          >
+            Skip [Esc]
+          </button>
+        )}
       </footer>
     </div>
   );

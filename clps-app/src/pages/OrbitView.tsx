@@ -206,6 +206,7 @@ export default function OrbitView() {
     setReducedMotion,
     lowQuality,
     bootComplete,
+    gatePassed,
     hasCompletedOpeningZoom,
     setHasCompletedOpeningZoom,
     setViewReady,
@@ -217,7 +218,14 @@ export default function OrbitView() {
   const [hoveredSite, setHoveredSite] = useState<any | null>(null);
   const [targetSite, setTargetSite] = useState<any | null>(null);
   const [showHeatmap, setShowHeatmap] = useState(false);
-  const [showBoot, setShowBoot] = useState(!bootComplete && !reducedMotion);
+  const [showBoot, setShowBoot] = useState((!bootComplete || !gatePassed) && !reducedMotion);
+
+  // Sync showBoot when gate & boot complete
+  useEffect(() => {
+    if (bootComplete && gatePassed) {
+      setShowBoot(false);
+    }
+  }, [bootComplete, gatePassed]);
 
   // Signal view readiness for tour
   useEffect(() => {
@@ -353,16 +361,18 @@ export default function OrbitView() {
 
           <Stars radius={110} depth={50} count={4000} factor={4} saturation={0} fade speed={0.5} />
 
-          {/* Moon sphere & surface-anchored site markers */}
-          <MoonGroup
-            targetSite={targetSite}
-            hoveredSite={hoveredSite}
-            isDescending={phase === 'descending'}
-            showHeatmap={showHeatmap}
-            sites={SITES}
-            onHover={setHoveredSite}
-            onSelect={handleSelect}
-          />
+          {/* Moon sphere & surface-anchored site markers (deferred until gatePassed is true) */}
+          {gatePassed && (
+            <MoonGroup
+              targetSite={targetSite}
+              hoveredSite={hoveredSite}
+              isDescending={phase === 'descending'}
+              showHeatmap={showHeatmap}
+              sites={SITES}
+              onHover={setHoveredSite}
+              onSelect={handleSelect}
+            />
+          )}
 
           {/* CameraControls */}
           <CameraControls
@@ -377,14 +387,16 @@ export default function OrbitView() {
           />
 
           {/* Cinematic Opening: Keep Moon zoomed out first and zoom in very slowly */}
-          <CinematicSlowZoom
-            cameraControlsRef={cameraControlsRef}
-            isBooting={showBoot}
-            reducedMotion={reducedMotion}
-            hasCompleted={hasCompletedOpeningZoom}
-            onComplete={() => setHasCompletedOpeningZoom(true)}
-            userInteractedRef={userInteractedRef}
-          />
+          {gatePassed && (
+            <CinematicSlowZoom
+              cameraControlsRef={cameraControlsRef}
+              isBooting={showBoot}
+              reducedMotion={reducedMotion}
+              hasCompleted={hasCompletedOpeningZoom}
+              onComplete={() => setHasCompletedOpeningZoom(true)}
+              userInteractedRef={userInteractedRef}
+            />
+          )}
         </Suspense>
       </View>
 

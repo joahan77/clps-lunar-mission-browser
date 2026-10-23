@@ -276,6 +276,34 @@ html, body, #root {
   animation: scan 2s linear infinite;
 }
 
+/* Start gate subtle border pulse */
+@keyframes gate-border-pulse {
+  0%, 100% {
+    border-color: #4d4d4d;
+    box-shadow: 0 0 0px rgba(255, 255, 255, 0);
+  }
+  50% {
+    border-color: #cfcfcf;
+    box-shadow: 0 0 12px rgba(255, 255, 255, 0.16);
+  }
+}
+.animate-gate-border-pulse {
+  animation: gate-border-pulse 3.4s ease-in-out infinite;
+}
+
+/* Start gate wireframe slow rotation */
+@keyframes wireframe-slow-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+.animate-wireframe-spin {
+  animation: wireframe-slow-spin 48s linear infinite;
+}
+
 /* Reduced-motion: simplify everything to opacity-only fades */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

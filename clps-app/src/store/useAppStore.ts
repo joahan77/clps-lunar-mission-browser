@@ -2,6 +2,17 @@ import { create } from 'zustand';
 
 export type AppPhase = 'boot' | 'idle' | 'descending' | 'terrain' | 'returning';
 
+const checkInitialGatePassed = () => {
+  if (typeof window === 'undefined') return false;
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('skipgate')) return true;
+    return window.sessionStorage.getItem('clps_start_gate_passed') === 'true';
+  } catch {
+    return false;
+  }
+};
+
 interface AppState {
   // Navigation phase
   phase: AppPhase;
@@ -47,7 +58,11 @@ interface AppState {
   reducedMotion: boolean;
   setReducedMotion: (v: boolean) => void;
 
-  // Boot & Opening
+  // Start Gate & Boot
+  gatePassed: boolean;
+  setGatePassed: (v: boolean) => void;
+  pendingTourFromGate: boolean;
+  setPendingTourFromGate: (v: boolean) => void;
   bootComplete: boolean;
   setBootComplete: (v: boolean) => void;
   hasCompletedOpeningZoom: boolean;
@@ -105,6 +120,18 @@ export const useAppStore = create<AppState>((set) => ({
 
   reducedMotion: false,
   setReducedMotion: (v) => set({ reducedMotion: v }),
+
+  gatePassed: checkInitialGatePassed(),
+  setGatePassed: (v) => {
+    if (typeof window !== 'undefined' && v) {
+      try {
+        window.sessionStorage.setItem('clps_start_gate_passed', 'true');
+      } catch {}
+    }
+    set({ gatePassed: v });
+  },
+  pendingTourFromGate: false,
+  setPendingTourFromGate: (v) => set({ pendingTourFromGate: v }),
 
   bootComplete: false,
   setBootComplete: (v) => set({ bootComplete: v }),
