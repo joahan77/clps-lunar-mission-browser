@@ -18,35 +18,47 @@ export default function BootSequence({ onComplete }: BootSequenceProps) {
       return;
     }
 
+    // Exact ~5.0s total sequence (4.2s count up + 0.3s confirm hold + 0.5s smooth fade)
+    const DURATION_MS = 4200;
+    const startTime = Date.now();
+
+    const handleKeyDown = () => {
+      setBootComplete(true);
+      onComplete();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
     const interval = setInterval(() => {
-      setProgress((prev) => {
-        const next = prev + Math.floor(Math.random() * 8) + 4;
-        if (next >= 100) {
-          clearInterval(interval);
-          setStageText('ORBITAL INSERTION CONFIRMED');
+      const elapsed = Date.now() - startTime;
+      const pct = Math.min(100, Math.floor((elapsed / DURATION_MS) * 100));
+
+      setProgress(pct);
+
+      if (pct >= 100) {
+        clearInterval(interval);
+        setStageText('ORBITAL INSERTION CONFIRMED');
+        setTimeout(() => {
+          setFadeOut(true);
           setTimeout(() => {
-            setFadeOut(true);
-            setTimeout(() => {
-              setBootComplete(true);
-              onComplete();
-            }, 400);
-          }, 300);
-          return 100;
-        }
+            setBootComplete(true);
+            onComplete();
+          }, 500);
+        }, 300);
+      } else if (pct > 75) {
+        setStageText('SYNCHRONIZING NASA JPL DE421 EPHEMERIS');
+      } else if (pct > 48) {
+        setStageText('ACQUIRING SOUTH POLE TARGET GRIDS');
+      } else if (pct > 22) {
+        setStageText('LOADING LOLA 5M/PX DEM TOPOGRAPHY');
+      } else {
+        setStageText('CALIBRATING SENSORS & IMU TELEMETRY');
+      }
+    }, 40);
 
-        if (next > 75) {
-          setStageText('SYNCHRONIZING NASA JPL DE421 EPHEMERIS');
-        } else if (next > 45) {
-          setStageText('ACQUIRING SOUTH POLE TARGET GRIDS');
-        } else if (next > 20) {
-          setStageText('LOADING TOPOGRAPHIC HEIGHTMAPS');
-        }
-
-        return next;
-      });
-    }, 45);
-
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
   }, [bootComplete, reducedMotion, onComplete, setBootComplete]);
 
   if (bootComplete || reducedMotion) return null;

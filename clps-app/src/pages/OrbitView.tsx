@@ -5,14 +5,20 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { CameraControls, Sphere, Stars, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import { useAppStore } from '../store/useAppStore';
-import RingMarker, { latLonToVector3 } from '../components/RingMarker';
+import MoonMarker3D from '../components/MoonMarker3D';
+import SouthPoleMiniMap from '../components/SouthPoleMiniMap';
+import SitesDrawer from '../components/SitesDrawer';
+import HeatmapLegendWidget from '../components/HeatmapLegendWidget';
 import MoonHeatmap from '../components/MoonHeatmap';
 import BootSequence from '../components/BootSequence';
 import DescentOverlay from '../components/DescentOverlay';
 import DemoMode from '../components/DemoMode';
 import FpsMonitor from '../components/FpsMonitor';
 import FooterAttribution from '../components/FooterAttribution';
-import { BookOpen } from 'lucide-react';
+import { getLunarLightingForDate } from '../utils/lunarLighting';
+import { useCountUp } from '../hooks/useCountUp';
+import { latLonToVector3 } from '../components/RingMarker';
+import { Sun, Compass } from 'lucide-react';
 
 // Separate component for the 3D Moon sphere with texture
 function MoonSphere() {
@@ -22,24 +28,30 @@ function MoonSphere() {
     <Sphere args={[12, 64, 64]} position={[0, 0, 0]}>
       <meshStandardMaterial 
         map={moonTexture} 
-        roughness={0.82} 
-        metalness={0.08} 
+        roughness={0.84} 
+        metalness={0.06} 
       />
     </Sphere>
   );
 }
 
-// Interactive Moon group with idle drift and programmatic targeting
+// Interactive Moon group with idle drift and surface-anchored markers
 function MoonGroup({
   targetSite,
   hoveredSite,
   isDescending,
   showHeatmap,
+  sites,
+  onHover,
+  onSelect,
 }: {
   targetSite: any | null;
   hoveredSite: any | null;
   isDescending: boolean;
   showHeatmap: boolean;
+  sites: any[];
+  onHover: (site: any | null) => void;
+  onSelect: (site: any) => void;
 }) {
   const groupRef = useRef<THREE.Group>(null);
   const { reducedMotion } = useAppStore();
@@ -50,6 +62,8 @@ function MoonGroup({
     // Slow idle rotation when no site is targeted/descending
     if (!isDescending && !hoveredSite && !targetSite && !reducedMotion) {
       groupRef.current.rotation.y += delta * 0.04;
+      // Idle southern tilt showcasing the South Pole towards viewer
+      groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, -0.65, 0.05);
     }
 
     // When a site is hovered or targeted, gently rotate so it faces front (towards Z+)
@@ -59,12 +73,11 @@ function MoonGroup({
       const targetY = -THREE.MathUtils.degToRad(activeSite.lon);
       groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, targetY, 0.08);
 
-      // Adjust tilt slightly so latitude is visible
-      const targetX = THREE.MathUtils.degToRad(activeSite.lat + 90) * 0.4;
+      // Southern tilt to showcase the landing site's polar latitude
+      const targetX = -0.75 - THREE.MathUtils.degToRad(activeSite.lat + 90) * 0.5;
       groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, targetX, 0.08);
-    } else if (!isDescending) {
-      // Smoothly return X tilt to 0
-      groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, 0, 0.05);
+    } else if (!isDescending && !reducedMotion) {
+      groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, -0.65, 0.05);
     }
   });
 
@@ -73,6 +86,19 @@ function MoonGroup({
       <MoonSphere />
       {/* 30-day illumination heatmap overlay */}
       <MoonHeatmap active={showHeatmap} opacity={0.85} />
+
+      {/* Surface-anchored 3D site markers directly on Moon surface */}
+      {sites.map((site: any) => (
+        <MoonMarker3D
+          key={site.id}
+          site={site}
+          radius={12.10}
+          isHovered={hoveredSite?.id === site.id}
+          isTargeted={targetSite?.id === site.id}
+          onHover={onHover}
+          onSelect={onSelect}
+        />
+      ))}
     </group>
   );
 }
@@ -88,7 +114,6 @@ export default function OrbitView() {
     reducedMotion,
     setReducedMotion,
     lowQuality,
-    setDataMethodsModalOpen,
   } = useAppStore();
 
   const cameraControlsRef = useRef<CameraControls | null>(null);
@@ -97,6 +122,13 @@ export default function OrbitView() {
   const [targetSite, setTargetSite] = useState<any | null>(null);
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [showBoot, setShowBoot] = useState(true);
+
+  // Real astronomical lighting for today's UTC date
+  const lighting = useMemo(() => getLunarLightingForDate(new Date()), []);
+
+  // Real data stat strip count-up
+  const animatedSiteCount = useCountUp(8, 0, 600);
+  const animatedHours = useCountUp(720, 0, 800);
 
   // Check prefers-reduced-motion
   useEffect(() => {
@@ -123,7 +155,7 @@ export default function OrbitView() {
     }
   };
 
-  // ── THE DESCENT SEQUENCE ──
+  // ── THE DESCENT SEQUENCE (Unchanged core logic) ──
   const handleSelect = (site: any) => {
     setSelectedSite(site);
     setTargetSite(site);
@@ -142,7 +174,6 @@ export default function OrbitView() {
       const sitePos = latLonToVector3(site.lat, site.lon, 12);
       
       // 2. Rotate to face the target coordinates (1.2s smooth ease)
-      // Camera moves closer along the normal towards the surface
       const normal = sitePos.clone().normalize();
       const approachCamPos = normal.clone().multiplyScalar(13.8);
 
@@ -178,13 +209,13 @@ export default function OrbitView() {
 
   return (
     <div className="h-screen w-full bg-t2-void-black text-t2-ghost-white relative overflow-hidden select-none">
-      {/* ── Boot Sequence (First Load) ── */}
+      {/* ── Skippable Boot Sequence (Fast <10s intro, auto-disabled under reduced motion) ── */}
       {showBoot && <BootSequence onComplete={() => setShowBoot(false)} />}
 
       {/* ── Crossfade Descent Overlay ── */}
       <DescentOverlay onCancel={() => setTargetSite(null)} />
 
-      {/* ── 3D Moon Canvas with CameraControls ── */}
+      {/* ── 3D Moon Canvas with Real Astronomical Terminator ── */}
       <div className="absolute inset-0 z-0">
         <Canvas
           camera={{ position: [0, 0, 35], fov: 45 }}
@@ -197,40 +228,45 @@ export default function OrbitView() {
           }}
         >
           <Suspense fallback={null}>
-            <ambientLight intensity={0.4} />
-            <directionalLight position={[10, 10, 10]} intensity={3} />
+            {/* Real Sun Directional Light for Today's UTC Date */}
+            <directionalLight
+              position={[
+                lighting.sunVector[0] * 50,
+                lighting.sunVector[1] * 50,
+                lighting.sunVector[2] * 50,
+              ]}
+              intensity={3.2}
+              color="#fffcf2"
+            />
+
+            {/* Faint Earthshine (cool blue fill light from sub-Earth coordinates) */}
+            <directionalLight
+              position={[
+                lighting.earthVector[0] * 40,
+                lighting.earthVector[1] * 40,
+                lighting.earthVector[2] * 40,
+              ]}
+              intensity={0.22}
+              color="#93c5fd"
+            />
+
+            {/* Deep space ambient baseline */}
+            <ambientLight intensity={0.06} />
+
             <Stars radius={110} depth={50} count={4000} factor={4} saturation={0} fade speed={0.5} />
 
-            {/* Moon sphere & procedural 30-day illumination heatmap */}
+            {/* Moon sphere & surface-anchored site markers */}
             <MoonGroup
               targetSite={targetSite}
               hoveredSite={hoveredSite}
               isDescending={phase === 'descending'}
               showHeatmap={showHeatmap}
+              sites={SITES}
+              onHover={setHoveredSite}
+              onSelect={handleSelect}
             />
 
-            {/* Ring markers for all landing sites on the sphere surface */}
-            {SITES.map((site: any) => {
-              const isActive = (targetSite?.id === site.id) || (hoveredSite?.id === site.id);
-              return (
-                <RingMarker
-                  key={site.id}
-                  lat={site.lat}
-                  lon={site.lon}
-                  radius={12.06}
-                  active={isActive}
-                  color={isActive ? '#c1ff00' : '#ffffff'}
-                />
-              );
-            })}
-
-            {/*
-              CameraControls: Replaces OrbitControls while preserving:
-              - damping (smooth inertia)
-              - minDistance / maxDistance
-              - polar angles
-              - interruptibility on drag
-            */}
+            {/* CameraControls */}
             <CameraControls
               ref={cameraControlsRef}
               makeDefault
@@ -245,108 +281,87 @@ export default function OrbitView() {
         </Canvas>
       </div>
 
-      {/* ── UI Overlay ── */}
-      <div className="absolute inset-0 z-10 flex flex-col items-center justify-between p-t2-18 md:p-t2-28 pointer-events-none">
-        {/* Title Header */}
-        <header className="text-center mt-t2-12 md:mt-t2-18 pointer-events-auto">
-          <h1 className="font-t1-unbounded text-t1-heading-sm md:text-t1-display font-bold text-t1-pure-white tracking-[2.55px] uppercase">
-            CLPS MISSION BROWSER
-          </h1>
-          <p className="font-t2-nbarchitekt text-t2-body-sm text-t2-pale-mist uppercase mt-t2-6 tracking-normal">
-            SELECT A LANDING SITE TO INITIATE DESCENT
-          </p>
+      {/* ── Redesigned UI Overlay (Zero backdrop blur on canvas) ── */}
+      <div className="absolute inset-0 z-10 flex flex-col justify-between p-4 sm:p-6 pointer-events-none">
+        {/* Top Header Bar: Thesis & Stat Strip (Left) + Primary CTA & Accessible Drawer (Right) */}
+        <header className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pointer-events-auto">
+          {/* Active Theory Thesis Panel (Positioned away from Moon, AA contrast) */}
+          <div className="bg-black/80 border border-t2-ash-border rounded-t2-xl p-3.5 sm:p-4 max-w-lg shadow-none space-y-2">
+            <h1 className="font-t1-unbounded text-xs sm:text-sm font-bold text-t1-pure-white tracking-[2.38px] uppercase leading-snug">
+              Where on the Moon can a lander survive the night?
+            </h1>
+            
+            <p className="font-t2-nbarchitekt text-[10px] text-t2-smoke flex items-center gap-1.5">
+              <Sun className="w-3 h-3 text-amber-400" />
+              <span>Terminator computed for {lighting.dateUtcString} UTC (NASA SPICE)</span>
+            </p>
+
+            {/* Real Data Stat Strip */}
+            <div className="pt-2 border-t border-zinc-800 flex items-center gap-4 text-xs font-t2-nbarchitekt text-t2-pale-mist tabular-nums">
+              <div>
+                <span className="font-t1-unbounded font-bold text-white text-sm">
+                  {animatedSiteCount}
+                </span>{' '}
+                <span className="text-[10px] text-t2-smoke uppercase">Sites</span>
+              </div>
+              <span className="text-zinc-700">•</span>
+              <div>
+                <span className="font-bold text-white font-mono">
+                  85.4°S – 89.9°S
+                </span>{' '}
+                <span className="text-[10px] text-t2-smoke uppercase">Span</span>
+              </div>
+              <span className="text-zinc-700">•</span>
+              <div>
+                <span className="font-bold text-white font-mono">
+                  {animatedHours}h
+                </span>{' '}
+                <span className="text-[10px] text-t2-smoke uppercase">Ephemeris</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Top-Right Action Controls */}
+          <div className="flex items-center gap-2.5">
+            {/* Primary CTA: Dusk Violet Pill with White Label */}
+            <button
+              onClick={() => navigate('/compare')}
+              className="bg-t2-dusk-violet text-t2-ghost-white rounded-full px-5 sm:px-6 py-2.5 font-t2-nbarchitekt text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-all border border-t2-dusk-violet shadow-none focus:outline-none focus:ring-1 focus:ring-white"
+            >
+              Compare sites →
+            </button>
+
+            {/* Collapsed Accessible Sites Drawer */}
+            <SitesDrawer
+              sites={SITES}
+              hoveredSite={hoveredSite}
+              targetSite={targetSite}
+              onHover={setHoveredSite}
+              onSelect={handleSelect}
+            />
+          </div>
         </header>
 
-        {/* 8 Site Cards Grid (Active Theory ghost cards + OHZI typography) */}
-        <nav
-          aria-label="Landing site targets"
-          className="grid grid-cols-2 md:grid-cols-4 gap-t2-12 md:gap-t2-16 max-w-5xl w-full px-t2-12 pointer-events-auto my-auto"
-        >
-          {SITES.map((site: any) => {
-            const isHovered = hoveredSite?.id === site.id;
-            const isTargeted = targetSite?.id === site.id;
+        {/* Bottom Interactive Area: South Pole Mini-Map (Left) + Heatmap Layer Widget (Right) */}
+        <div className="w-full flex items-end justify-between gap-4 pointer-events-auto">
+          {/* South-Pole Polar Mini-Map */}
+          <SouthPoleMiniMap
+            sites={SITES}
+            hoveredSite={hoveredSite}
+            targetSite={targetSite}
+            onHover={setHoveredSite}
+            onSelect={handleSelect}
+          />
 
-            return (
-              <button
-                key={site.id}
-                onClick={() => handleSelect(site)}
-                onMouseEnter={() => setHoveredSite(site)}
-                onMouseLeave={() => setHoveredSite(null)}
-                className={`bg-black/50 backdrop-blur-[4px] border rounded-t2-xl p-t2-18 text-left transition-all cursor-pointer group focus:outline-none focus:ring-1 focus:ring-t2-ghost-white ${
-                  isTargeted
-                    ? 'border-data-nominal bg-data-nominal/20 scale-[1.02]'
-                    : isHovered
-                    ? 'border-t2-smoke bg-white/[0.08]'
-                    : 'border-t2-ash-border hover:border-t2-smoke'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <h2 className="font-t1-unbounded text-t1-caption md:text-t1-body-sm font-semibold text-t1-pure-white tracking-[3.01px] truncate uppercase">
-                    {site.name}
-                  </h2>
-                  <span
-                    className={`w-1.5 h-1.5 rounded-full transition-colors ${
-                      isTargeted
-                        ? 'bg-data-nominal animate-ping'
-                        : isHovered
-                        ? 'bg-t2-ghost-white'
-                        : 'bg-transparent'
-                    }`}
-                  />
-                </div>
-                <div className="font-t2-nbarchitekt text-t2-caption text-t2-pale-mist mt-t2-6 space-y-0.5">
-                  <p>{Math.abs(site.lat).toFixed(1)}°S</p>
-                  <p>
-                    {site.lon >= 0
-                      ? `${site.lon.toFixed(1)}°E`
-                      : `${Math.abs(site.lon).toFixed(1)}°W`}
-                  </p>
-                </div>
-              </button>
-            );
-          })}
-        </nav>
-
-        {/* Bottom Actions */}
-        <footer className="flex flex-wrap items-center justify-center gap-t2-12 pointer-events-auto mb-t2-4">
-          <button
-            onClick={() => navigate('/compare')}
-            className="font-t2-nbarchitekt text-t2-body-sm text-t2-ghost-white border border-t2-ash-border rounded-t2-md px-t2-14 py-t2-6 bg-transparent hover:bg-white/[0.08] hover:border-t2-smoke transition-colors focus:outline-none focus:ring-1 focus:ring-t2-ghost-white"
-          >
-            [ View Mission Planner Comparison ]
-          </button>
-
-          {/* Data & Methods Trigger */}
-          <button
-            onClick={() => setDataMethodsModalOpen(true)}
-            className="font-t2-nbarchitekt text-t2-body-sm text-t2-ghost-white border border-t2-ash-border rounded-t2-md px-t2-14 py-t2-6 bg-black/40 hover:bg-white/[0.08] hover:border-t2-smoke transition-colors focus:outline-none flex items-center gap-1.5"
-          >
-            <BookOpen className="w-3.5 h-3.5 text-indigo-400" />
-            <span>Data & Methods</span>
-          </button>
-
-          {/* Illumination Heatmap Toggle */}
-          <button
-            onClick={() => setShowHeatmap(!showHeatmap)}
-            className={`font-t2-nbarchitekt text-t2-body-sm border rounded-t2-md px-t2-14 py-t2-6 transition-colors ${
-              showHeatmap
-                ? 'bg-t3-electric-indigo/20 border-t3-electric-indigo text-t2-ghost-white'
-                : 'border-t2-ash-border text-t2-pale-mist hover:text-t2-ghost-white'
-            }`}
-          >
-            {showHeatmap ? '● Illumination Heatmap (Active)' : '○ Illumination Heatmap'}
-          </button>
-
-          <button
-            onClick={() => navigate('/styleguide')}
-            className="font-t2-nbarchitekt text-t2-body-sm text-t2-pale-mist border border-transparent rounded-t2-md px-t2-14 py-t2-6 hover:text-t2-ghost-white transition-colors focus:outline-none"
-          >
-            System Styleguide →
-          </button>
-        </footer>
+          {/* Illumination Heatmap Layer Toggle with Perceptual Ramp Legend */}
+          <HeatmapLegendWidget
+            active={showHeatmap}
+            onToggle={() => setShowHeatmap(!showHeatmap)}
+          />
+        </div>
 
         {/* Global Footer Attribution Bar */}
-        <div className="w-full pointer-events-auto">
+        <div className="w-full pointer-events-auto -mx-4 sm:-mx-6 -mb-4 sm:-mb-6 pt-3">
           <FooterAttribution />
         </div>
       </div>
