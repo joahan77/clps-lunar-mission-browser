@@ -12,6 +12,9 @@ export interface DataPoint {
   sunVisible?: boolean;
   earthVisible?: boolean;
   terrainHorizon?: number;
+  maxSurfaceTempK?: number | null;
+  averageSlopeDeg?: number | null;
+  illuminationPct?: number | null;
 }
 
 export interface SiteSummary {
@@ -25,6 +28,9 @@ export interface SiteSummary {
   maxSunElevation: number;
   minEarthElevation: number;
   maxEarthElevation: number;
+  maxSurfaceTempK?: number | null;
+  averageSlopeDeg?: number | null;
+  illuminationPct?: number | null;
 }
 
 export interface LandingSite {

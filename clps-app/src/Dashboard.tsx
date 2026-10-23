@@ -15,6 +15,8 @@ import {
   Info,
   BookOpen,
   Layers,
+  Thermometer,
+  Mountain,
 } from 'lucide-react';
 import {
   LineChart,
@@ -339,6 +341,80 @@ export default function Dashboard({
               </div>
             )}
 
+            {/* Surface Temp */}
+            {currentPoint.maxSurfaceTempK !== undefined && (
+              <div className="p-t2-12 rounded-t2-xl bg-black/50 border border-t2-ash-border">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-t2-nbarchitekt text-t2-body-sm text-t2-pale-mist flex items-center gap-1.5">
+                    <Thermometer className={`w-4 h-4 ${currentPoint.maxSurfaceTempK !== null && currentPoint.maxSurfaceTempK < 150 ? 'text-blue-400' : 'text-amber-400'}`} />
+                    Surface Temp
+                  </span>
+                  {currentPoint.maxSurfaceTempK !== null && currentPoint.maxSurfaceTempK < 150 ? (
+                    <span className="font-mono text-[9px] px-1.5 py-0.5 rounded border border-blue-500/50 bg-blue-500/15 text-blue-400 font-bold tracking-wider animate-pulse">
+                      CRITICAL COLD
+                    </span>
+                  ) : (
+                    <span className="font-mono text-[9px] px-1.5 py-0.5 rounded border border-zinc-700/60 bg-white/[0.04] text-zinc-400 font-bold tracking-wider">
+                      DIVINER GCP
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-baseline gap-1 mt-1">
+                  <span className={`font-t1-unbounded text-t1-subheading font-bold tracking-[2.66px] tabular-nums ${
+                    currentPoint.maxSurfaceTempK !== null && currentPoint.maxSurfaceTempK < 150 ? 'text-blue-400' : 'text-t1-pure-white'
+                  }`}>
+                    {currentPoint.maxSurfaceTempK !== null ? `${Math.round(currentPoint.maxSurfaceTempK)}K` : 'N/A'}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Terrain Slope */}
+            {currentPoint.averageSlopeDeg !== undefined && (
+              <div className="p-t2-12 rounded-t2-xl bg-black/50 border border-t2-ash-border">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-t2-nbarchitekt text-t2-body-sm text-t2-pale-mist flex items-center gap-1.5">
+                    <Mountain className={`w-4 h-4 ${currentPoint.averageSlopeDeg !== null && currentPoint.averageSlopeDeg > 15 ? 'text-rose-400' : 'text-emerald-400'}`} />
+                    Terrain Slope
+                  </span>
+                  {currentPoint.averageSlopeDeg !== null && currentPoint.averageSlopeDeg > 15 ? (
+                    <span className="font-mono text-[9px] px-1.5 py-0.5 rounded border border-rose-500/60 bg-rose-500/20 text-rose-400 font-bold tracking-wider flex items-center gap-1 animate-pulse">
+                      HAZARD
+                    </span>
+                  ) : (
+                    <span className="font-mono text-[9px] px-1.5 py-0.5 rounded border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 font-bold tracking-wider">
+                      NOMINAL
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-baseline gap-1 mt-1">
+                  <span className="font-t1-unbounded text-t1-subheading font-bold text-t1-pure-white tracking-[2.66px] tabular-nums">
+                    {currentPoint.averageSlopeDeg !== null ? `${currentPoint.averageSlopeDeg.toFixed(1)}°` : 'N/A'}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Illumination */}
+            <div className="p-t2-12 rounded-t2-xl bg-black/50 border border-t2-ash-border">
+              <div className="flex items-center justify-between mb-1">
+                <span className="font-t2-nbarchitekt text-t2-body-sm text-t2-pale-mist flex items-center gap-1.5">
+                  <Sun className="w-4 h-4 text-data-sun" />
+                  Illumination
+                </span>
+                <span className="font-mono text-[9px] px-1.5 py-0.5 rounded border border-amber-500/40 bg-amber-500/10 text-amber-400 font-bold tracking-wider">
+                  {currentPoint.illuminationPct !== null && currentPoint.illuminationPct !== undefined ? 'LOLA HORIZON' : 'GLOBAL'}
+                </span>
+              </div>
+              <div className="flex items-baseline gap-1 mt-1">
+                <span className="font-t1-unbounded text-t1-subheading font-bold text-t1-pure-white tracking-[2.66px] tabular-nums">
+                  {currentPoint.illuminationPct !== null && currentPoint.illuminationPct !== undefined
+                    ? `${currentPoint.illuminationPct.toFixed(1)}%`
+                    : 'N/A'}
+                </span>
+              </div>
+            </div>
+
             {/* Battery Level */}
             {currentPoint.batteryLevel !== undefined && (
               <div className="p-t2-12 rounded-t2-xl bg-black/50 border border-t2-ash-border">
@@ -553,7 +629,9 @@ export default function Dashboard({
                   unit="°"
                   tick={{ fill: '#808080', fontSize: 10, fontFamily: 'nbarchitekt, Space Grotesk, monospace' }}
                   tickLine={{ stroke: '#4d4d4d' }}
-                  domain={[-8, 12]}
+                  type="number"
+                  domain={[-90, 90]}
+                  ticks={[-90, -45, 0, 45, 90]}
                 />
                 <Tooltip
                   contentStyle={{

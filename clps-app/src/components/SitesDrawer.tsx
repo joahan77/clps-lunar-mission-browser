@@ -54,7 +54,7 @@ export default function SitesDrawer({
         className="font-t2-nbarchitekt text-t2-body-sm text-t2-ghost-white border border-t2-ash-border rounded-t2-md px-3 py-2 bg-black/80 hover:bg-white/[0.08] hover:border-t2-smoke transition-all flex items-center gap-2 focus:outline-none focus:ring-1 focus:ring-t2-ghost-white"
       >
         <MapPin className="w-3.5 h-3.5 text-indigo-400" />
-        <span>Sites (8)</span>
+        <span>Sites ({sites.length})</span>
         {isOpen ? <ChevronUp className="w-3.5 h-3.5 text-t2-smoke" /> : <ChevronDown className="w-3.5 h-3.5 text-t2-smoke" />}
       </button>
 
@@ -104,7 +104,7 @@ export default function SitesDrawer({
                         {site.name}
                       </span>
                       <span className="text-[10px] text-zinc-400 font-mono">
-                        {Math.abs(site.lat).toFixed(1)}°S
+                        {Math.abs(site.lat).toFixed(1)}°{site.lat >= 0 ? 'N' : 'S'}
                       </span>
                     </div>
                     <p className="text-[10px] text-zinc-400 truncate mt-0.5 font-sans">

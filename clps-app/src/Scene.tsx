@@ -7,7 +7,7 @@ import { useAppStore } from './store/useAppStore';
 interface SceneProps {
   sunElevation: number; // in degrees (e.g. +1.34° to +1.57°)
   earthElevation: number; // in degrees (e.g. -6.74° to +6.37°)
-  heightmapUrl?: string;
+  heightmapUrl?: string | null;
 }
 
 /**
@@ -55,8 +55,8 @@ function getSunColorAndIntensity(elevation: number): { color: THREE.Color; inten
 }
 
 /** 3D Lunar terrain plane displaced using real heightmap */
-function LunarSurface({ heightmapUrl }: { heightmapUrl?: string }) {
-  const heightmap = useTexture(heightmapUrl || '/heightmaps/shackleton_heightmap.png');
+function LunarSurface({ heightmapUrl }: { heightmapUrl: string }) {
+  const heightmap = useTexture(heightmapUrl);
   const verticalExaggeration = useAppStore((s) => s.verticalExaggeration);
   const { gl } = useThree();
 
@@ -314,11 +314,13 @@ export default function Scene({ sunElevation, earthElevation, heightmapUrl }: Sc
       <Starfield />
 
       {/* 3D Lunar Terrain Surface */}
-      <Suspense fallback={null}>
-        <LunarSurface key={heightmapUrl || 'default'} heightmapUrl={heightmapUrl} />
-      </Suspense>
+      {heightmapUrl && (
+        <Suspense fallback={null}>
+          <LunarSurface key={heightmapUrl} heightmapUrl={heightmapUrl} />
+        </Suspense>
+      )}
 
-      {/* Lunar Lander */}
+      {/* Lunar Lander - renders on top of the terrain */}
       <LunarLander />
 
       {/* Lunar dust micro-particles floating near surface */}

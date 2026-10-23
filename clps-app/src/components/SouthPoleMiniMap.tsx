@@ -62,7 +62,7 @@ export default function SouthPoleMiniMap({
           <text x={cx - mapRadius - 4} y={cy + 2.5} textAnchor="end" fill="#666666" fontSize="7" fontFamily="nbarchitekt, monospace">90°W</text>
 
           {/* 8 Site Dots */}
-          {sites.map((site) => {
+          {sites.filter((site) => site.lat <= -80.0).map((site) => {
             const colat = 90.0 - Math.abs(site.lat);
             const f = Math.min(Math.max(colat / maxColatitude, 0), 1);
             const rad = (site.lon * Math.PI) / 180.0;
