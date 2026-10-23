@@ -11,12 +11,22 @@ export default function MissionControl() {
   const { siteId } = useParams();
   const navigate = useNavigate();
   const { SITES, selectedSite, setSelectedSite } = useMission();
-  const { setPhase, setOverlayOpacity, reducedMotion } = useAppStore();
+  const { setPhase, setOverlayOpacity, reducedMotion, setViewReady } = useAppStore();
 
   const [telemetryData, setTelemetryData] = useState<DataPoint[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSiteFetching, setIsSiteFetching] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Signal view readiness for tour when telemetry is loaded
+  useEffect(() => {
+    if (!isLoading && telemetryData.length > 0) {
+      setViewReady(true);
+    } else {
+      setViewReady(false);
+    }
+    return () => setViewReady(false);
+  }, [isLoading, telemetryData.length, setViewReady]);
 
   // Crossfade in on mount
   useEffect(() => {

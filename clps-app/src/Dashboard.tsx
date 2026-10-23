@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Sun,
   Globe,
@@ -34,7 +34,6 @@ import type { DataPoint } from './data';
 import { useCountUp } from './hooks/useCountUp';
 import { useDecodeScramble } from './hooks/useDecodeScramble';
 import { useMissionClock } from './hooks/useMissionClock';
-import DemoMode from './components/DemoMode';
 import FpsMonitor from './components/FpsMonitor';
 import FooterAttribution from './components/FooterAttribution';
 
@@ -57,8 +56,16 @@ export default function Dashboard({
     setVerticalExaggeration,
     setActiveExplainerMetric,
     setDataMethodsModalOpen,
+    demoSliderIndex,
   } = useAppStore();
   const [currentIndex, setCurrentIndex] = useState<number>(0);
+
+  // Sync slider with automated tour scrubbing
+  useEffect(() => {
+    if (demoSliderIndex !== null && demoSliderIndex !== undefined) {
+      setCurrentIndex(demoSliderIndex);
+    }
+  }, [demoSliderIndex]);
 
   // Real-time ticking mission clock
   const missionClock = useMissionClock(1, 0, 0);
@@ -629,9 +636,6 @@ export default function Dashboard({
 
       {/* Global FPS Monitor HUD */}
       <FpsMonitor />
-
-      {/* Guided Tour Demo Mode integration */}
-      <DemoMode onSliderScrub={(idx) => setCurrentIndex(idx)} />
     </div>
   );
 }

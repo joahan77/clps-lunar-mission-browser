@@ -18,8 +18,18 @@ interface AppState {
   // Demo mode
   demoMode: boolean;
   demoStep: number;
+  demoPaused: boolean;
+  demoPreviousRoute: string | null;
+  demoSliderIndex: number | null;
+  demoShowRadarModal: boolean;
+  viewReady: boolean;
   setDemoMode: (on: boolean) => void;
   setDemoStep: (n: number) => void;
+  setDemoPaused: (paused: boolean) => void;
+  setDemoPreviousRoute: (route: string | null) => void;
+  setDemoSliderIndex: (idx: number | null) => void;
+  setDemoShowRadarModal: (show: boolean) => void;
+  setViewReady: (ready: boolean) => void;
 
   // Overlay (crossfade)
   overlayOpacity: number;
@@ -68,8 +78,18 @@ export const useAppStore = create<AppState>((set) => ({
 
   demoMode: false,
   demoStep: 0,
-  setDemoMode: (on) => set({ demoMode: on, demoStep: 0 }),
-  setDemoStep: (n) => set({ demoStep: n }),
+  demoPaused: false,
+  demoPreviousRoute: null,
+  demoSliderIndex: null,
+  demoShowRadarModal: false,
+  viewReady: false,
+  setDemoMode: (on) => set({ demoMode: on, demoStep: 0, demoPaused: false, demoSliderIndex: null, demoShowRadarModal: false }),
+  setDemoStep: (n) => set({ demoStep: n, demoSliderIndex: null }),
+  setDemoPaused: (paused) => set({ demoPaused: paused }),
+  setDemoPreviousRoute: (route) => set({ demoPreviousRoute: route }),
+  setDemoSliderIndex: (idx) => set({ demoSliderIndex: idx }),
+  setDemoShowRadarModal: (show) => set({ demoShowRadarModal: show }),
+  setViewReady: (ready) => set({ viewReady: ready }),
 
   overlayOpacity: 1,
   setOverlayOpacity: (v) => set({ overlayOpacity: v }),

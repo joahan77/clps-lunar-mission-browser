@@ -13,7 +13,6 @@ import {
   Legend,
   Tooltip,
 } from 'recharts';
-import DemoMode from '../components/DemoMode';
 import FpsMonitor from '../components/FpsMonitor';
 import FooterAttribution from '../components/FooterAttribution';
 
@@ -27,6 +26,8 @@ export default function ComparisonView() {
   const [scores, setScores] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const { demoShowRadarModal, setViewReady } = useAppStore();
+
   // Column Sorting State
   const [sortKey, setSortKey] = useState<SortKey>('commsUptime');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
@@ -34,6 +35,7 @@ export default function ComparisonView() {
   // Radar multi-select comparison state (up to 3 sites)
   const [selectedForRadar, setSelectedForRadar] = useState<string[]>(['malapert', 'mons_mouton']);
   const [showRadarModal, setShowRadarModal] = useState(false);
+  const isRadarOpen = showRadarModal || demoShowRadarModal;
 
   // FLIP animation refs
   const rowRefs = useRef<Map<string, HTMLElement>>(new Map());
@@ -76,9 +78,11 @@ export default function ComparisonView() {
       const withRank = results.map((item, idx) => ({ ...item, baseRank: idx + 1 }));
       setScores(withRank);
       setLoading(false);
+      setViewReady(true);
     }
     loadAllData();
-  }, [SITES]);
+    return () => setViewReady(false);
+  }, [SITES, setViewReady]);
 
   // Record positions before sort
   const handleSort = (key: SortKey) => {
@@ -442,7 +446,7 @@ export default function ComparisonView() {
         )}
 
         {/* ── Overlaid Radar Chart Modal ── */}
-        {showRadarModal && (
+        {isRadarOpen && (
           <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-[6px] flex items-center justify-center p-4">
             <div className="bg-t3-slate-hollow border border-t3-haze rounded-t3-xl max-w-2xl w-full p-6 space-y-4">
               <div className="flex items-center justify-between border-b border-t3-haze/30 pb-3">
@@ -455,7 +459,10 @@ export default function ComparisonView() {
                   </p>
                 </div>
                 <button
-                  onClick={() => setShowRadarModal(false)}
+                  onClick={() => {
+                    setShowRadarModal(false);
+                    useAppStore.getState().setDemoShowRadarModal(false);
+                  }}
                   className="p-1 text-t3-haze hover:text-t3-paper-white transition-colors"
                 >
                   <X className="w-5 h-5" />
@@ -505,7 +512,10 @@ export default function ComparisonView() {
 
               <div className="text-right">
                 <button
-                  onClick={() => setShowRadarModal(false)}
+                  onClick={() => {
+                    setShowRadarModal(false);
+                    useAppStore.getState().setDemoShowRadarModal(false);
+                  }}
                   className="font-t2-nbarchitekt text-xs text-t2-ghost-white px-4 py-2 border border-t2-ash-border rounded-t2-md hover:bg-white/10 transition-colors"
                 >
                   Close Radar View
@@ -518,7 +528,6 @@ export default function ComparisonView() {
 
       <FooterAttribution />
       <FpsMonitor />
-      <DemoMode />
     </div>
   );
 }

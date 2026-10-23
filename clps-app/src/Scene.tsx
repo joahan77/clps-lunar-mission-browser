@@ -295,6 +295,11 @@ export default function Scene({ sunElevation, earthElevation, heightmapUrl }: Sc
         toneMappingExposure: 1.0,
         powerPreference: 'high-performance',
       }}
+      onCreated={({ gl }) => {
+        gl.domElement.addEventListener('webglcontextlost', (e) => {
+          e.preventDefault();
+        }, false);
+      }}
       className="w-full h-full"
     >
       <color attach="background" args={['#000000']} />

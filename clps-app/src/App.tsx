@@ -5,6 +5,7 @@ import ComparisonView from './pages/ComparisonView';
 import Styleguide from './pages/Styleguide';
 import MetricExplainerModal from './components/MetricExplainerModal';
 import DataMethodsModal from './components/DataMethodsModal';
+import DemoTour from './components/DemoTour';
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
       </Routes>
       <MetricExplainerModal />
       <DataMethodsModal />
+      <DemoTour />
     </>
   );
 }

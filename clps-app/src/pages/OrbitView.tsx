@@ -12,7 +12,6 @@ import HeatmapLegendWidget from '../components/HeatmapLegendWidget';
 import MoonHeatmap from '../components/MoonHeatmap';
 import BootSequence from '../components/BootSequence';
 import DescentOverlay from '../components/DescentOverlay';
-import DemoMode from '../components/DemoMode';
 import FpsMonitor from '../components/FpsMonitor';
 import FooterAttribution from '../components/FooterAttribution';
 import { getLunarLightingForDate } from '../utils/lunarLighting';
@@ -115,6 +114,7 @@ export default function OrbitView() {
     setReducedMotion,
     lowQuality,
     bootComplete,
+    setViewReady,
   } = useAppStore();
 
   const cameraControlsRef = useRef<CameraControls | null>(null);
@@ -123,6 +123,12 @@ export default function OrbitView() {
   const [targetSite, setTargetSite] = useState<any | null>(null);
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [showBoot, setShowBoot] = useState(!bootComplete && !reducedMotion);
+
+  // Signal view readiness for tour
+  useEffect(() => {
+    setViewReady(true);
+    return () => setViewReady(false);
+  }, [setViewReady]);
 
   // Real astronomical lighting for today's UTC date
   const lighting = useMemo(() => getLunarLightingForDate(new Date()), []);
@@ -226,6 +232,11 @@ export default function OrbitView() {
             antialias: !lowQuality,
             toneMapping: THREE.ACESFilmicToneMapping,
             powerPreference: 'high-performance',
+          }}
+          onCreated={({ gl }) => {
+            gl.domElement.addEventListener('webglcontextlost', (e) => {
+              e.preventDefault();
+            }, false);
           }}
         >
           <Suspense fallback={null}>
@@ -369,9 +380,6 @@ export default function OrbitView() {
 
       {/* FPS & Quality Monitor HUD */}
       <FpsMonitor />
-
-      {/* Guided Tour Demo Mode integration */}
-      <DemoMode />
     </div>
   );
 }
