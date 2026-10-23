@@ -4,15 +4,15 @@
 /* Fallback @font-face declarations for licensed fonts */
 @font-face {
   font-family: 'nbarchitekt';
-  src: local('Space Grotesk'), local('SpaceGrotesk-Regular'), url('/fonts/nbarchitekt.woff2') format('woff2');
+  src: local('Space Grotesk'), local('SpaceGrotesk-Regular'), local('Arial');
   font-weight: 400 700;
   font-display: swap;
 }
 
 @font-face {
   font-family: 'Aeonik';
-  src: local('Inter'), local('Inter-Regular'), url('/fonts/aeonik.woff2') format('woff2');
-  font-weight: 400 500;
+  src: local('Inter'), local('Inter-Regular'), local('Arial');
+  font-weight: 400 700;
   font-display: swap;
 }
 
