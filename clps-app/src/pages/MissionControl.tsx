@@ -5,6 +5,7 @@ import Dashboard from '../Dashboard';
 import { useMission } from '../context/MissionContext';
 import { useAppStore } from '../store/useAppStore';
 import type { DataPoint } from '../data';
+import { getCachedJson } from '../utils/assetPreloader';
 import DescentOverlay from '../components/DescentOverlay';
 
 export default function MissionControl() {
@@ -51,6 +52,14 @@ export default function MissionControl() {
     setError(null);
 
     const jsonPath = `/${site.id}_data.json`;
+    const cached = getCachedJson(jsonPath);
+    if (cached) {
+      const points: DataPoint[] = Array.isArray(cached) ? cached : (cached?.data || []);
+      setTelemetryData(points);
+      setIsLoading(false);
+      setIsSiteFetching(false);
+      return;
+    }
 
     fetch(jsonPath)
       .then((res) => {
@@ -150,7 +159,7 @@ export default function MissionControl() {
   }
 
   return (
-    <div className="h-screen w-full relative overflow-hidden bg-t2-void-black text-t2-ghost-white">
+    <div className="h-screen w-full relative overflow-hidden bg-transparent text-t2-ghost-white">
       {/* ── Return/Descent Crossfade Overlay ── */}
       <DescentOverlay />
 

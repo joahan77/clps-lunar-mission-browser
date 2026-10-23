@@ -121,7 +121,7 @@ export default function Dashboard({
       : 'text-data-blackout-text bg-data-blackout/15 border-data-blackout/40';
 
   return (
-    <div className="flex h-screen w-screen bg-t2-void-black text-t2-ghost-white select-none overflow-hidden relative">
+    <div className="flex h-screen w-screen bg-transparent text-t2-ghost-white select-none overflow-hidden relative">
       {/* ── Left Sidebar (Active Theory Shell + OHZI Typography + Times Editorial) ── */}
       <aside className="w-[320px] flex-shrink-0 bg-black/50 backdrop-blur-[4px] border-r border-t2-ash-border flex flex-col z-10 overflow-hidden">
         <div className="flex flex-col flex-1 overflow-y-auto min-h-0">
@@ -366,8 +366,8 @@ export default function Dashboard({
                   </span>
                   <div className="flex-1 h-1.5 bg-black/60 rounded-t2-md overflow-hidden border border-t2-ash-border">
                     <div
-                      className="h-full bg-data-nominal transition-all duration-300"
-                      style={{ width: `${Math.min(currentPoint.batteryLevel, 100)}%` }}
+                      className="h-full w-full bg-data-nominal will-change-transform origin-left transition-transform duration-300"
+                      style={{ transform: `scaleX(${Math.min(currentPoint.batteryLevel, 100) / 100})` }}
                     />
                   </div>
                 </div>
@@ -420,7 +420,7 @@ export default function Dashboard({
       {/* ── Right Main Area ── */}
       <main className="flex-1 flex flex-col h-full min-w-0">
         {/* Top Section (3D View - 60% height) */}
-        <div className="relative w-full h-[60%] bg-t2-void-black overflow-hidden">
+        <div className="relative w-full h-[60%] bg-transparent overflow-hidden">
           <Scene
             sunElevation={currentPoint.sunElevation}
             earthElevation={currentPoint.earthElevation}

@@ -177,6 +177,8 @@
   --ease-gravitational: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-lift-off:      cubic-bezier(0.0, 0.0, 0.2, 1);
   --ease-descent:       cubic-bezier(0.4, 0, 1, 1);
+  --ease-out-expo:      cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out-smooth: cubic-bezier(0.65, 0, 0.35, 1);
 
   --stagger-row:  60ms;
   --stagger-card: 80ms;

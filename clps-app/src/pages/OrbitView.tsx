@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useMemo, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMission } from '../context/MissionContext';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { CameraControls, Sphere, Stars, useTexture } from '@react-three/drei';
+import { useFrame, useThree } from '@react-three/fiber';
+import { CameraControls, Sphere, Stars, useTexture, View, PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
 import { useAppStore } from '../store/useAppStore';
 import MoonMarker3D from '../components/MoonMarker3D';
@@ -19,16 +19,29 @@ import { useCountUp } from '../hooks/useCountUp';
 import { latLonToVector3 } from '../components/RingMarker';
 import { Sun, Compass } from 'lucide-react';
 
-// Separate component for the 3D Moon sphere with texture
+// Separate component for the 3D Moon sphere with texture & realistic dark albedo
 function MoonSphere() {
-  const moonTexture = useTexture("https://threejs.org/examples/textures/planets/moon_1024.jpg");
+  const moonTexture = useTexture("/textures/moon_1024.jpg");
+  const { gl } = useThree();
+
+  useMemo(() => {
+    if (moonTexture) {
+      moonTexture.generateMipmaps = true;
+      moonTexture.minFilter = THREE.LinearMipmapLinearFilter;
+      moonTexture.magFilter = THREE.LinearFilter;
+      moonTexture.anisotropy = Math.min(16, gl.capabilities.getMaxAnisotropy());
+      moonTexture.colorSpace = THREE.SRGBColorSpace;
+      moonTexture.needsUpdate = true;
+    }
+  }, [moonTexture, gl]);
 
   return (
     <Sphere args={[12, 64, 64]} position={[0, 0, 0]}>
       <meshStandardMaterial 
         map={moonTexture} 
-        roughness={0.84} 
-        metalness={0.06} 
+        roughness={0.92} 
+        metalness={0.04}
+        color="#a8a8b2" /* realistic dark volcanic albedo ~0.12, no flat white blowout */
       />
     </Sphere>
   );
@@ -215,83 +228,68 @@ export default function OrbitView() {
   };
 
   return (
-    <div className="h-screen w-full bg-t2-void-black text-t2-ghost-white relative overflow-hidden select-none">
+    <div className="h-screen w-full bg-transparent text-t2-ghost-white relative overflow-hidden select-none">
       {/* ── Skippable Boot Sequence (Fast <10s intro, auto-disabled under reduced motion) ── */}
       {showBoot && <BootSequence onComplete={() => setShowBoot(false)} />}
 
       {/* ── Crossfade Descent Overlay ── */}
       <DescentOverlay onCancel={() => setTargetSite(null)} />
 
-      {/* ── 3D Moon Canvas with Real Astronomical Terminator ── */}
-      <div className="absolute inset-0 z-0">
-        <Canvas
-          camera={{ position: [0, 0, 35], fov: 45 }}
-          dpr={[1, lowQuality ? 1.0 : 1.5]}
-          performance={{ min: 0.5 }}
-          gl={{
-            antialias: !lowQuality,
-            toneMapping: THREE.ACESFilmicToneMapping,
-            powerPreference: 'high-performance',
-          }}
-          onCreated={({ gl }) => {
-            gl.domElement.addEventListener('webglcontextlost', (e) => {
-              e.preventDefault();
-            }, false);
-          }}
-        >
-          <Suspense fallback={null}>
-            {/* Real Sun Directional Light for Today's UTC Date */}
-            <directionalLight
-              position={[
-                lighting.sunVector[0] * 50,
-                lighting.sunVector[1] * 50,
-                lighting.sunVector[2] * 50,
-              ]}
-              intensity={3.2}
-              color="#fffcf2"
-            />
+      {/* ── 3D Moon Viewport via Persistent Canvas ── */}
+      <View className="absolute inset-0 z-0 pointer-events-auto">
+        <Suspense fallback={null}>
+          <PerspectiveCamera makeDefault position={[0, 0, 35]} fov={45} />
+          {/* Real Sun Directional Light for Today's UTC Date */}
+          <directionalLight
+            position={[
+              lighting.sunVector[0] * 50,
+              lighting.sunVector[1] * 50,
+              lighting.sunVector[2] * 50,
+            ]}
+            intensity={2.8}
+            color="#fffcf2"
+          />
 
-            {/* Faint Earthshine (cool blue fill light from sub-Earth coordinates) */}
-            <directionalLight
-              position={[
-                lighting.earthVector[0] * 40,
-                lighting.earthVector[1] * 40,
-                lighting.earthVector[2] * 40,
-              ]}
-              intensity={0.22}
-              color="#93c5fd"
-            />
+          {/* Faint Earthshine (cool blue fill light from sub-Earth coordinates) */}
+          <directionalLight
+            position={[
+              lighting.earthVector[0] * 40,
+              lighting.earthVector[1] * 40,
+              lighting.earthVector[2] * 40,
+            ]}
+            intensity={0.22}
+            color="#93c5fd"
+          />
 
-            {/* Deep space ambient baseline */}
-            <ambientLight intensity={0.06} />
+          {/* Deep space ambient baseline */}
+          <ambientLight intensity={0.06} />
 
-            <Stars radius={110} depth={50} count={4000} factor={4} saturation={0} fade speed={0.5} />
+          <Stars radius={110} depth={50} count={4000} factor={4} saturation={0} fade speed={0.5} />
 
-            {/* Moon sphere & surface-anchored site markers */}
-            <MoonGroup
-              targetSite={targetSite}
-              hoveredSite={hoveredSite}
-              isDescending={phase === 'descending'}
-              showHeatmap={showHeatmap}
-              sites={SITES}
-              onHover={setHoveredSite}
-              onSelect={handleSelect}
-            />
+          {/* Moon sphere & surface-anchored site markers */}
+          <MoonGroup
+            targetSite={targetSite}
+            hoveredSite={hoveredSite}
+            isDescending={phase === 'descending'}
+            showHeatmap={showHeatmap}
+            sites={SITES}
+            onHover={setHoveredSite}
+            onSelect={handleSelect}
+          />
 
-            {/* CameraControls */}
-            <CameraControls
-              ref={cameraControlsRef}
-              makeDefault
-              smoothTime={0.35}
-              minDistance={14}
-              maxDistance={70}
-              minPolarAngle={Math.PI / 2 - 0.35}
-              maxPolarAngle={Math.PI / 2 + 0.35}
-              onStart={handleControlStart}
-            />
-          </Suspense>
-        </Canvas>
-      </div>
+          {/* CameraControls */}
+          <CameraControls
+            ref={cameraControlsRef}
+            makeDefault
+            smoothTime={0.35}
+            minDistance={14}
+            maxDistance={70}
+            minPolarAngle={Math.PI / 2 - 0.35}
+            maxPolarAngle={Math.PI / 2 + 0.35}
+            onStart={handleControlStart}
+          />
+        </Suspense>
+      </View>
 
       {/* ── Redesigned UI Overlay (Zero backdrop blur on canvas) ── */}
       <div className="absolute inset-0 z-10 flex flex-col justify-between p-4 sm:p-6 pointer-events-none">

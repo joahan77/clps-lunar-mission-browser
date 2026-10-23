@@ -1,8 +1,6 @@
 import { useRef, useMemo, Suspense } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Stars, useTexture, Sparkles } from '@react-three/drei';
-import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
-import { BlendFunction } from 'postprocessing';
+import { useFrame, useThree } from '@react-three/fiber';
+import { OrbitControls, Stars, useTexture, Sparkles, View, PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
 import { useAppStore } from './store/useAppStore';
 
@@ -60,6 +58,17 @@ function getSunColorAndIntensity(elevation: number): { color: THREE.Color; inten
 function LunarSurface({ heightmapUrl }: { heightmapUrl?: string }) {
   const heightmap = useTexture(heightmapUrl || '/heightmaps/shackleton_heightmap.png');
   const verticalExaggeration = useAppStore((s) => s.verticalExaggeration);
+  const { gl } = useThree();
+
+  useMemo(() => {
+    if (heightmap) {
+      heightmap.generateMipmaps = true;
+      heightmap.minFilter = THREE.LinearMipmapLinearFilter;
+      heightmap.magFilter = THREE.LinearFilter;
+      heightmap.anisotropy = Math.min(16, gl.capabilities.getMaxAnisotropy());
+      heightmap.needsUpdate = true;
+    }
+  }, [heightmap, gl]);
 
   // Base physical scale modulated by user-selected vertical exaggeration
   const effectiveDisplacement = 4.5 * (verticalExaggeration || 1.5);
@@ -284,24 +293,8 @@ export default function Scene({ sunElevation, earthElevation, heightmapUrl }: Sc
   const earthshineIntensity = earthElevation > 0 ? Math.min(earthElevation / 6, 1) * 0.22 : 0.05;
 
   return (
-    <Canvas
-      shadows
-      camera={{ position: [0, 30, 50], fov: 45 }}
-      dpr={[1, lowQuality ? 1.0 : 1.5]}
-      performance={{ min: 0.5 }}
-      gl={{
-        antialias: !lowQuality,
-        toneMapping: THREE.ACESFilmicToneMapping,
-        toneMappingExposure: 1.0,
-        powerPreference: 'high-performance',
-      }}
-      onCreated={({ gl }) => {
-        gl.domElement.addEventListener('webglcontextlost', (e) => {
-          e.preventDefault();
-        }, false);
-      }}
-      className="w-full h-full"
-    >
+    <View className="w-full h-full pointer-events-auto">
+      <PerspectiveCamera makeDefault position={[0, 30, 50]} fov={45} />
       <color attach="background" args={['#000000']} />
       <fogExp2 attach="fog" args={['#000000', 0.015]} />
 
@@ -350,23 +343,6 @@ export default function Scene({ sunElevation, earthElevation, heightmapUrl }: Sc
         target={[0, 2, 0]}
         maxPolarAngle={THREE.MathUtils.degToRad(89.5)}
       />
-
-      {/* ── Post-processing: Bloom & Vignette ── */}
-      <EffectComposer multisampling={0}>
-        <Bloom
-          intensity={lowQuality ? 1.2 : 2.0}
-          luminanceThreshold={0.15}
-          luminanceSmoothing={0.85}
-          mipmapBlur={!lowQuality}
-          blendFunction={BlendFunction.ADD}
-        />
-        <Vignette
-          offset={0.4}
-          darkness={0.65}
-          eskil={false}
-          blendFunction={BlendFunction.NORMAL}
-        />
-      </EffectComposer>
-    </Canvas>
+    </View>
   );
 }
