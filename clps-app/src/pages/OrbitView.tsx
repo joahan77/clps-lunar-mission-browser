@@ -296,7 +296,7 @@ export default function OrbitView() {
         {/* Top Header Bar: Thesis & Stat Strip (Left) + Primary CTA & Accessible Drawer (Right) */}
         <header className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pointer-events-auto">
           {/* Active Theory Thesis Panel (Positioned away from Moon, AA contrast) */}
-          <div className="bg-black/80 border border-t2-ash-border rounded-t2-xl p-3.5 sm:p-4 max-w-lg shadow-none space-y-2">
+          <div className={`bg-black/80 border border-t2-ash-border rounded-t2-xl p-3.5 sm:p-4 max-w-lg shadow-none space-y-2 transition-all duration-700 delay-100 ease-out-expo ${showBoot ? 'opacity-0 -translate-y-2' : 'opacity-100 translate-y-0'}`}>
             <h1 className="font-t1-unbounded text-xs sm:text-sm font-bold text-t1-pure-white tracking-[2.38px] uppercase leading-snug">
               Where on the Moon can a lander survive the night?
             </h1>
@@ -332,7 +332,7 @@ export default function OrbitView() {
           </div>
 
           {/* Top-Right Action Controls */}
-          <div className="flex items-center gap-2.5">
+          <div className={`flex items-center gap-2.5 transition-all duration-700 delay-200 ease-out-expo ${showBoot ? 'opacity-0 -translate-y-2' : 'opacity-100 translate-y-0'}`}>
             {/* Primary CTA: Dusk Violet Pill with White Label */}
             <button
               onClick={() => navigate('/compare')}
@@ -353,7 +353,7 @@ export default function OrbitView() {
         </header>
 
         {/* Bottom Interactive Area: South Pole Mini-Map (Left) + Heatmap Layer Widget (Right) */}
-        <div className="w-full flex items-end justify-between gap-4 pointer-events-auto">
+        <div className={`w-full flex items-end justify-between gap-4 pointer-events-auto transition-all duration-700 delay-300 ease-out-expo ${showBoot ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}>
           {/* South-Pole Polar Mini-Map */}
           <SouthPoleMiniMap
             sites={SITES}
@@ -371,7 +371,7 @@ export default function OrbitView() {
         </div>
 
         {/* Global Footer Attribution Bar */}
-        <div className="w-full pointer-events-auto -mx-4 sm:-mx-6 -mb-4 sm:-mb-6 pt-3">
+        <div className={`w-full pointer-events-auto -mx-4 sm:-mx-6 -mb-4 sm:-mb-6 pt-3 transition-all duration-700 delay-400 ease-out-expo ${showBoot ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}>
           <FooterAttribution />
         </div>
       </div>

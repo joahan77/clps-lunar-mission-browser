@@ -257,6 +257,16 @@ html, body, #root {
   animation: lime-shimmer 1.4s var(--ease-gravitational) 0.5s 1 forwards;
 }
 
+/* Sunlight sweep on wireframe moon at 100% */
+@keyframes sweep {
+  0% {
+    transform: translateX(0px);
+  }
+  100% {
+    transform: translateX(480px);
+  }
+}
+
 /* Scan-line boot effect */
 @keyframes scan {
   0%   { transform: translateY(-100%); }
