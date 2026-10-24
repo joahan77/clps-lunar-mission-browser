@@ -34,15 +34,7 @@ export default function MissionControl() {
     setOverlayOpacity(0);
   }, [setOverlayOpacity]);
 
-  // 1. Sync URL to Context
-  useEffect(() => {
-    const siteFromUrl = SITES.find((s: any) => s.id === siteId);
-    if (siteFromUrl && siteFromUrl.id !== selectedSite.id) {
-      setSelectedSite(siteFromUrl);
-    }
-  }, [siteId, SITES, selectedSite.id, setSelectedSite]);
-
-  // 2. Fetch Data
+  // 1. Fetch Telemetry Data
   const fetchTelemetry = useCallback((site: any, isInitial = false) => {
     if (isInitial) {
       setIsLoading(true);
@@ -85,20 +77,26 @@ export default function MissionControl() {
       });
   }, []);
 
-  // 3. Initial Fetch
+  // 2. Sync URL to Context and trigger immediate telemetry fetch on siteId change
   useEffect(() => {
-    fetchTelemetry(selectedSite, true);
-  }, []);
+    const targetSite = SITES.find((s: any) => s.id === siteId) || selectedSite || SITES[0];
+    if (targetSite && targetSite.id !== selectedSite.id) {
+      setSelectedSite(targetSite);
+    }
+    if (targetSite) {
+      const isInitial = telemetryData.length === 0;
+      fetchTelemetry(targetSite, isInitial);
+    }
+  }, [siteId, SITES, setSelectedSite, fetchTelemetry]);
 
-  // 4. Handle Dropdown Change inside the Dashboard
+  // 3. Handle Dropdown Change inside the Dashboard
   const handleSelectSite = (site: any) => {
     if (site.id === selectedSite.id && !error) return;
     setSelectedSite(site);
     navigate(`/mission/${site.id}`);
-    fetchTelemetry(site, false);
   };
 
-  // 5. Reverse Descent (Return to Orbit)
+  // 4. Reverse Descent (Return to Orbit)
   const handleReturnToOrbit = () => {
     if (reducedMotion) {
       navigate('/');
@@ -164,15 +162,13 @@ export default function MissionControl() {
       <DescentOverlay />
 
       {/* ── TOP FLOATING NAVIGATION CHROME ── */}
-      <div className="absolute top-4 left-4 z-50">
+      <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
         <button
           onClick={handleReturnToOrbit}
           className="font-t2-nbarchitekt text-t2-body-sm text-t2-ghost-white bg-black/50 backdrop-blur-[4px] border border-t2-ash-border rounded-t2-md px-t2-14 py-t2-6 hover:bg-white/[0.08] hover:border-t2-smoke transition-colors focus:outline-none focus:ring-1 focus:ring-t2-ghost-white"
         >
           ← Return to Orbit
         </button>
-      </div>
-      <div className="absolute top-4 right-4 z-50">
         <button
           onClick={() => navigate('/compare')}
           className="font-t2-nbarchitekt text-t2-body font-bold text-t2-ghost-white bg-t2-dusk-violet border border-t2-dusk-violet rounded-t2-full px-t2-18 py-t2-4 hover:opacity-90 transition-opacity focus:outline-none focus:ring-1 focus:ring-t2-ghost-white"

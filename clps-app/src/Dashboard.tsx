@@ -73,7 +73,7 @@ export default function Dashboard({
   const missionClock = useMissionClock(1, 0, 0);
 
   // Reset slider when telemetry data changes
-  useMemo(() => {
+  useEffect(() => {
     setCurrentIndex(0);
   }, [telemetryData]);
 
@@ -108,9 +108,9 @@ export default function Dashboard({
 
   // Decode scramble on site name and coordinates
   const scrambledSiteName = useDecodeScramble(selectedSite.name || '', 500);
-  const coordString = `${Math.abs(selectedSite.lat).toFixed(1)}°S, ${
-    selectedSite.lon >= 0 ? `${selectedSite.lon.toFixed(1)}°E` : `${Math.abs(selectedSite.lon).toFixed(1)}°W`
-  }`;
+  const latDir = selectedSite.lat >= 0 ? '°N' : '°S';
+  const lonDir = selectedSite.lon >= 0 ? '°E' : '°W';
+  const coordString = `${Math.abs(selectedSite.lat).toFixed(1)}${latDir}, ${Math.abs(selectedSite.lon).toFixed(1)}${lonDir}`;
   const scrambledCoords = useDecodeScramble(coordString, 600);
 
   // Comms status styling using Data Tokens
@@ -500,6 +500,8 @@ export default function Dashboard({
           <Scene
             sunElevation={currentPoint.sunElevation}
             earthElevation={currentPoint.earthElevation}
+            sunAzimuth={currentPoint.sunAzimuth ?? 0}
+            earthAzimuth={currentPoint.earthAzimuth ?? 0}
             heightmapUrl={selectedSite.heightmapUrl}
           />
 
